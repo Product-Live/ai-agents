@@ -1,0 +1,159 @@
+{
+    "schema": "1.0",
+    "key": "javascript-task-cheatsheet",
+    "title": "JavaScript task cheat sheet",
+    "titleLocal": {
+        "fra": "Aide-mémoire de la tâche JavaScript"
+    },
+    "description": "Eight tiny code-execute-javascript tasks showing every way to use the task: inline expression or script file, JSON or FILE response, resources loaded as XML, TEXT or JSON, log(), and an expected failure on an optional task.",
+    "descriptionLocal": {
+        "fra": "Huit petites tâches code-execute-javascript montrant chaque façon d'utiliser la tâche : expression en ligne ou fichier de script, réponse JSON ou FILE, ressources chargées en XML, TEXT ou JSON, log(), et un échec attendu sur une tâche optionnelle."
+    },
+    "tasks": [
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "return_json_value",
+            "description": "Inline expression returning a scalar: output.result is the value itself",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "a": 1
+                },
+                "expression": "return $.data.a;",
+                "response": "JSON"
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "return_json_object",
+            "description": "Inline expression returning an object: output.result.<field> is readable by the next tasks",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "a": 1,
+                    "label": "demo"
+                },
+                "expression": "return { doubled: $.data.a * 2, label: $.data.label.toUpperCase() };",
+                "response": "JSON"
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "return_text_file",
+            "description": "response FILE: the returned string is written verbatim into test.txt and output.result is that file",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "a": "test"
+                },
+                "expression": "return $.data.a;",
+                "response": "FILE",
+                "outputFileName": "test.txt"
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "return_xml_file",
+            "description": "response FILE with an XML string: the usual way to feed an XML-consuming task from a script",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "a": "<test>test</test>"
+                },
+                "expression": "return $.data.a;",
+                "response": "FILE",
+                "outputFileName": "test.xml"
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "return_json_file",
+            "description": "response FILE with an object: the object is serialised into test.json",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "a": {
+                        "b": 1
+                    }
+                },
+                "expression": "return $.data.a;",
+                "response": "FILE",
+                "outputFileName": "test.json"
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "return_file_from_script",
+            "description": "expressionFile: the code lives in an asset instead of the inline expression",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "greeting": "hello"
+                },
+                "expressionFile": "file://assets/return-string.js",
+                "response": "FILE",
+                "outputFileName": "greeting.txt"
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "read_resources",
+            "description": "resources: three files loaded as XML, TEXT and JSON before the script runs, read through $.resources",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {},
+                "resources": [
+                    {
+                        "key": "xml",
+                        "file": "file://assets/example.xml",
+                        "loadAs": "XML"
+                    },
+                    {
+                        "key": "txt",
+                        "file": "file://assets/example.txt",
+                        "loadAs": "TEXT"
+                    },
+                    {
+                        "key": "json",
+                        "file": "file://assets/example.json",
+                        "loadAs": "JSON"
+                    }
+                ],
+                "expressionFile": "file://assets/read-resources.js",
+                "response": "FILE",
+                "outputFileName": "resources.json"
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "throw_error",
+            "description": "Expected failure: the script throws, the task fails, and because it is optional the job continues (status COMPLETED_WITH_ERRORS)",
+            "optional": true,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "items": []
+                },
+                "expressionFile": "file://assets/throw-error.js",
+                "response": "JSON"
+            }
+        }
+    ],
+    "outputParameters": {
+        "json_value": "${return_json_value.output.result}",
+        "json_object": "${return_json_object.output.result}",
+        "text_file": "${return_text_file.output.result}",
+        "xml_file": "${return_xml_file.output.result}",
+        "json_file": "${return_json_file.output.result}",
+        "file_from_script": "${return_file_from_script.output.result}",
+        "resources_file": "${read_resources.output.result}",
+        "throw_error_status": "${throw_error.status}"
+    }
+}

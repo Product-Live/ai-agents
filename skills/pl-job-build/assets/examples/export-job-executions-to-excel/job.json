@@ -1,0 +1,138 @@
+{
+    "schema": "1.0",
+    "key": "export-job-executions-to-excel",
+    "title": "Export job executions to Excel",
+    "icon": "file-excel",
+    "titleLocal": {
+        "fra": "Exporter les exécutions de jobs vers Excel"
+    },
+    "description": "Exports a report of every job execution of the last N days (job, status, start and end times, duration, user who launched it) into an Excel workbook.",
+    "descriptionLocal": {
+        "fra": "Exporte un rapport de toutes les exécutions de jobs des N derniers jours (job, statut, dates de début et de fin, durée, utilisateur) dans un classeur Excel."
+    },
+    "userInputs": [
+        {
+            "key": "days",
+            "title": "Days",
+            "titleLocal": {
+                "fra": "Jours"
+            },
+            "description": "Number of days to look back (executions created after now minus N days)",
+            "required": true,
+            "type": "TEXT",
+            "default": "30"
+        }
+    ],
+    "tasks": [
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "calculate_start_date",
+            "description": "Compute the ISO date N days ago (TEXT inputs are strings, the script parses the number)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/calculate-date.js",
+                "data": {
+                    "days": "${workflow.input.days}"
+                }
+            }
+        },
+        {
+            "name": "data-job-execution-find",
+            "taskReferenceName": "find_job_executions",
+            "description": "Find the job executions created after the start date, most recent first, as a JSON attachment",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "REQUEST",
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "criteria": {
+                            "type": "greater",
+                            "field": "createdAt",
+                            "value": "${calculate_start_date.output.result.startDateISO}"
+                        },
+                        "options": {
+                            "sort": "createdAt",
+                            "sortOrder": "DESC"
+                        }
+                    }
+                },
+                "outputs": [
+                    {
+                        "mediaType": "application/json",
+                        "outputMode": "ATTACHMENT",
+                        "outputKey": "json"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "data-user-find",
+            "taskReferenceName": "find_users",
+            "description": "Find every user of the account to resolve the name and email of the user who launched each execution",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "ALL",
+                "outputs": [
+                    {
+                        "mediaType": "application/json",
+                        "outputMode": "ATTACHMENT",
+                        "outputKey": "json"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "build_excel_request",
+            "description": "Join executions and users and write the Generate-Excel request as an XML file",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/build-excel-request.js",
+                "response": "FILE",
+                "outputFileName": "generate-excel-request.xml",
+                "resources": [
+                    {
+                        "key": "executions",
+                        "file": "${find_job_executions.output.result.json}",
+                        "loadAs": "JSON"
+                    },
+                    {
+                        "key": "users",
+                        "file": "${find_users.output.result.json}",
+                        "loadAs": "JSON"
+                    }
+                ],
+                "data": {
+                    "daysRequested": "${calculate_start_date.output.result.daysRequested}"
+                }
+            }
+        },
+        {
+            "name": "file-generation-xlsx",
+            "taskReferenceName": "generate_excel",
+            "description": "Render the workbook from the request and the shipped template",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${build_excel_request.output.result}",
+                "templates": [
+                    {
+                        "key": "report",
+                        "file": "file://assets/job-executions-report.xlsx"
+                    }
+                ]
+            }
+        }
+    ],
+    "outputParameters": {
+        "files": "${generate_excel.output.files}",
+        "executions_found": "${find_job_executions.output.totalElements}"
+    }
+}

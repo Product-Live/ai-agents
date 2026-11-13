@@ -1,0 +1,6 @@
+*.job.zip
+.jobignore
+assets/TESTS/*
+tests/*
+node_modules/*
+.git/*

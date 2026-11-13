@@ -1,0 +1,203 @@
+{
+    "schema": "1.0",
+    "key": "search-items-by-option-across-partitions",
+    "title": "Search items by option across all partitions",
+    "titleLocal": {
+        "fra": "Rechercher des items par option dans toutes les partitions"
+    },
+    "description": "Searches every partition of the PL_DEMO_PRODUCTS table for the items whose LIFE_CYCLE field matches the selected option, and displays one access link per partition holding matches.",
+    "descriptionLocal": {
+        "fra": "Recherche dans toutes les partitions de la table PL_DEMO_PRODUCTS les items dont le champ LIFE_CYCLE correspond à l'option choisie, et affiche un lien d'accès par partition contenant des résultats."
+    },
+    "userInputs": [
+        {
+            "key": "lifeCycle",
+            "title": "Life cycle",
+            "titleLocal": {
+                "fra": "Cycle de vie"
+            },
+            "description": "Life cycle option to search for",
+            "required": true,
+            "mode": "SINGLE",
+            "type": "SELECT",
+            "options": [
+                {
+                    "key": "NEW",
+                    "title": "New"
+                },
+                {
+                    "key": "RENEWED",
+                    "title": "Renewed"
+                },
+                {
+                    "key": "ENDED",
+                    "title": "Ended"
+                }
+            ],
+            "default": "NEW"
+        },
+        {
+            "key": "screen",
+            "title": "Screen",
+            "titleLocal": {
+                "fra": "Écran"
+            },
+            "description": "Optional. Screen to open the items with",
+            "required": false,
+            "type": "SCREEN"
+        }
+    ],
+    "tasks": [
+        {
+            "name": "data-table-find",
+            "taskReferenceName": "find_table",
+            "description": "Find the PL_DEMO_PRODUCTS table by key, to get its id",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "REQUEST",
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "criteria": {
+                            "type": "eq",
+                            "field": "key",
+                            "value": "PL_DEMO_PRODUCTS"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_table_found",
+            "description": "Stop in error if the table does not exist",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.count > 0 ? 'OK' : 'NOT_FOUND'",
+            "inputParameters": {
+                "count": "${find_table.output.totalElements}"
+            },
+            "decisionCases": {
+                "NOT_FOUND": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_no_table",
+                        "description": "Table not found",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "FAILED",
+                            "outputParameters": {
+                                "message": "Table 'PL_DEMO_PRODUCTS' not found. Run the demo-products-table example first or adapt the table key."
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        },
+        {
+            "name": "data-partition-find",
+            "taskReferenceName": "find_partitions",
+            "description": "List the partitions of the table, to resolve partition ids into partition keys",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "ALL",
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "context": {
+                            "tableId": "${find_table.output.result.json[0].id}"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "data-item-find",
+            "taskReferenceName": "find_items",
+            "description": "Find the items matching the selected option, across every partition of the table",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "REQUEST",
+                "findOptions": {
+                    "partitionSelection": "TABLE",
+                    "tableKey": "PL_DEMO_PRODUCTS"
+                },
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "criteria": {
+                            "type": "eq",
+                            "field": {
+                                "target": "item.fields",
+                                "key": "LIFE_CYCLE"
+                            },
+                            "value": "${workflow.input.lifeCycle}"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "build_message",
+            "description": "Group the items by partition and build the HTML message with one access link per partition",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/build-message.js",
+                "data": {
+                    "items": "${find_items.output.result.json}",
+                    "partitions": "${find_partitions.output.result.json}",
+                    "fieldKey": "LIFE_CYCLE",
+                    "optionKey": "${workflow.input.lifeCycle}",
+                    "tableKey": "PL_DEMO_PRODUCTS",
+                    "screenKey": "${workflow.input.screen.key}",
+                    "appDomain": "app.product-live.com"
+                }
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "write_message_file",
+            "description": "Write the HTML message to a file (notification-display-message takes a file)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expression": "return $.data.html;",
+                "data": {
+                    "html": "${build_message.output.result.html}"
+                },
+                "response": "FILE",
+                "outputFileName": "message.html"
+            }
+        },
+        {
+            "name": "notification-display-message",
+            "taskReferenceName": "display_results",
+            "description": "Display the search results with the access links",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${write_message_file.output.result}",
+                "height": "${build_message.output.result.messageHeight}"
+            }
+        }
+    ],
+    "outputParameters": {
+        "message": "${display_results.output.message}",
+        "items_found": "${build_message.output.result.foundCount}",
+        "partitions_with_matches": "${build_message.output.result.partitionCount}"
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "product-live",
+  "displayName": "Product-Live Data Factory",
+  "version": "1.0.2",
+  "description": "Data Factory skills (pl-explain, pl-job-build, pl-update) and the pl-job-architect agent for Product-Live users.",
+  "author": {
+    "name": "Product-Live",
+    "url": "https://github.com/Product-Live"
+  },
+  "homepage": "https://github.com/Product-Live/ai-agents",
+  "repository": "https://github.com/Product-Live/ai-agents",
+  "license": "MIT",
+  "keywords": ["product-live", "data-factory"],
+  "agents": ["./platforms/claude/agents/pl-job-architect.md"]
+}

@@ -1,0 +1,69 @@
+{
+    "schema": "1.0",
+    "key": "import-items-from-csv",
+    "title": "Import items from a CSV file",
+    "icon": "file-add",
+    "titleLocal": {
+        "fra": "Importer des produits depuis un fichier CSV"
+    },
+    "description": "Converts a CSV file uploaded by the user into the Data Factory items XML format (one column per field, the header row gives the field keys) and imports the rows as items of the PL_DEMO_PRODUCTS table.",
+    "descriptionLocal": {
+        "fra": "Convertit un fichier CSV déposé par l'utilisateur au format XML des items Data Factory (une colonne par champ, la ligne d'en-tête donne les clés) et importe les lignes comme items de la table PL_DEMO_PRODUCTS."
+    },
+    "userInputs": [
+        {
+            "key": "file",
+            "title": "CSV file",
+            "titleLocal": {
+                "fra": "Fichier CSV"
+            },
+            "description": "Semicolon-separated, UTF-8, with a header row holding the field keys (EAN_13, TYPOLOGY, TITLE_EN, ...)",
+            "required": true,
+            "type": "FILE"
+        }
+    ],
+    "tasks": [
+        {
+            "name": "file-conversion-csv-to-xml",
+            "taskReferenceName": "csv_to_xml",
+            "description": "Convert the uploaded CSV into the generic Csv-To-Xml grid (one R element per row, one C element per cell)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${workflow.input.file}",
+                "columnSeparator": ";",
+                "textDelimiter": "\"",
+                "escapeCharacter": "\""
+            }
+        },
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_items",
+            "description": "Map the grid to the items XML format: the header row gives the field keys, EAN_13 becomes the identifier and TYPOLOGY the classification",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${csv_to_xml.output.file}",
+                "xslt": "file://assets/csv-to-items.xslt",
+                "fileName": "items.xml"
+            }
+        },
+        {
+            "name": "table-import-items",
+            "taskReferenceName": "import_items",
+            "description": "Create or update the items of the PL_DEMO_PRODUCTS table",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${build_items.output.file}",
+                "mode": "CREATE_OR_UPDATE"
+            }
+        }
+    ],
+    "outputParameters": {
+        "items_file": "${build_items.output.file}",
+        "import_report": "${import_items.output.report}"
+    }
+}

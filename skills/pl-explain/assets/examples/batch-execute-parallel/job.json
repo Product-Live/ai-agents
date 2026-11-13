@@ -1,0 +1,86 @@
+{
+    "schema": "1.0",
+    "key": "batch-execute-parallel",
+    "title": "Run two finds in parallel with task-batch-execute",
+    "titleLocal": {
+        "fra": "Exécuter deux recherches en parallèle avec task-batch-execute"
+    },
+    "description": "Runs two independent finds (accounts and users) in parallel through task-batch-execute, then concatenates both results into a single JSON file with a JavaScript task.",
+    "descriptionLocal": {
+        "fra": "Exécute deux recherches indépendantes (comptes et utilisateurs) en parallèle via task-batch-execute, puis concatène les deux résultats dans un seul fichier JSON avec une tâche JavaScript."
+    },
+    "tasks": [
+        {
+            "name": "task-batch-execute",
+            "taskReferenceName": "execute_batch",
+            "description": "Export accounts and users in parallel (one batch entry per find, concurrency 2)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "concurrency": 2,
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "json": {
+                        "tasks": [
+                            {
+                                "key": "accounts",
+                                "taskName": "data-account-find",
+                                "inputs": {
+                                    "findMode": "ALL",
+                                    "outputs": [
+                                        {
+                                            "outputKey": "json",
+                                            "outputMode": "INLINE",
+                                            "mediaType": "application/json"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "key": "users",
+                                "taskName": "data-user-find",
+                                "inputs": {
+                                    "findMode": "ALL",
+                                    "outputs": [
+                                        {
+                                            "outputKey": "json",
+                                            "outputMode": "INLINE",
+                                            "mediaType": "application/json"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                },
+                "outputs": [
+                    {
+                        "outputKey": "json",
+                        "outputMode": "INLINE",
+                        "mediaType": "application/json"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "concatenate_results",
+            "description": "Concatenate the accounts and users results into a single JSON file",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/concatenate-results.js",
+                "data": {
+                    "results": "${execute_batch.output.result.json}"
+                },
+                "response": "FILE",
+                "outputFileName": "accounts-and-users.json"
+            }
+        }
+    ],
+    "outputParameters": {
+        "file": "${concatenate_results.output.result}",
+        "summary": "${execute_batch.output.summary}"
+    }
+}

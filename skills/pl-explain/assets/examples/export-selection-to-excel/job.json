@@ -1,0 +1,134 @@
+{
+    "schema": "1.0",
+    "key": "export-selection-to-excel",
+    "title": "Export selection to Excel",
+    "icon": "file-excel",
+    "titleLocal": {
+        "fra": "Export Excel de la sélection"
+    },
+    "description": "Exports the items selected in the grid to one or more Excel files: one column per field, one row per item, columns ordered like the first screen of the table.",
+    "descriptionLocal": {
+        "fra": "Exporte les éléments sélectionnés vers un ou plusieurs fichiers Excel, une colonne par champ et une ligne par élément, colonnes ordonnées comme le premier écran de la table."
+    },
+    "userInputs": [
+        {
+            "key": "output_file_type",
+            "title": "File output type",
+            "titleLocal": {
+                "fra": "Type de sortie"
+            },
+            "description": "One Excel file per selected category, or a single file holding every field of the selected categories",
+            "descriptionLocal": {
+                "fra": "Un fichier Excel par catégorie de produit sélectionnée, ou un seul fichier comprenant l'ensemble des attributs de ces catégories"
+            },
+            "required": true,
+            "mode": "SINGLE",
+            "type": "SELECT",
+            "options": [
+                {
+                    "key": "one_file_per_category",
+                    "title": "One file per category",
+                    "titleLocal": {
+                        "fra": "Un fichier Excel par catégorie de produit"
+                    }
+                },
+                {
+                    "key": "one_file",
+                    "title": "One file",
+                    "titleLocal": {
+                        "fra": "Un seul fichier Excel complet"
+                    }
+                }
+            ],
+            "default": "one_file_per_category"
+        }
+    ],
+    "tasks": [
+        {
+            "name": "table-export-items",
+            "taskReferenceName": "export_items",
+            "description": "Export the items selected in the grid",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "tableKey": "${workflow.globalVariables.excel_export_table_key}",
+                "mode": "USER_SELECTION",
+                "fileName": "items.xml"
+            }
+        },
+        {
+            "name": "table-export-schema",
+            "taskReferenceName": "export_table_schema",
+            "description": "Export the active schema of the table (field titles, options, screens) used to build the columns",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "tableKey": "${workflow.globalVariables.excel_export_table_key}",
+                "mode": "ACTIVE",
+                "fileName": "table.xml"
+            }
+        },
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_excel_request",
+            "description": "Build the Generate-Excel request (sheets and cells) from the items and the schema",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${export_items.output.file}",
+                "xslt": "file://assets/1-xslt/export-excel.xslt",
+                "params": [
+                    {
+                        "name": "table_file",
+                        "select": "${export_table_schema.output.file}"
+                    },
+                    {
+                        "name": "columns_include_medias",
+                        "select": "no"
+                    },
+                    {
+                        "name": "columns_keep_empty_columns",
+                        "select": "no"
+                    },
+                    {
+                        "name": "output_file_type",
+                        "select": "${workflow.input.output_file_type}"
+                    },
+                    {
+                        "name": "output_only_data_structure",
+                        "select": "no"
+                    },
+                    {
+                        "name": "columns_include_specifics_fields",
+                        "select": "yes"
+                    }
+                ],
+                "fileName": "generate-excel-request.xml"
+            }
+        },
+        {
+            "name": "file-generation-xlsx",
+            "taskReferenceName": "generate_excel",
+            "description": "Generate the Excel workbooks from the request and the shipped templates",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${build_excel_request.output.file}",
+                "templates": [
+                    {
+                        "key": "template",
+                        "file": "file://assets/2-template/template-excel.xlsx"
+                    },
+                    {
+                        "key": "template_large_rows",
+                        "file": "file://assets/2-template/template-excel-large-rows.xlsx"
+                    }
+                ]
+            }
+        }
+    ],
+    "outputParameters": {
+        "files": "${generate_excel.output.files}"
+    }
+}

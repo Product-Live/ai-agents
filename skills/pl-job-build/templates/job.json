@@ -1,0 +1,23 @@
+{
+  "schema": "1.0",
+  "key": "<JOB_KEY>",
+  "title": "<JOB_TITLE>",
+  "icon": "file-excel",
+  "description": "<WHAT_THE_JOB_DOES>",
+  "userInputs": [],
+  "tasks": [
+    {
+      "name": "table-export-items",
+      "taskReferenceName": "export_items",
+      "description": "<WHY_THIS_TASK_IS_HERE>",
+      "optional": false,
+      "type": "SUB_WORKFLOW",
+      "inputParameters": {
+        "tableKey": "<TABLE_KEY>",
+        "mode": "USER_SELECTION",
+        "fileName": "items.xml"
+      }
+    }
+  ],
+  "outputParameters": {}
+}

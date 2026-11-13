@@ -1,0 +1,43 @@
+{
+    "schema": "1.0",
+    "key": "export-items-by-ean",
+    "title": "Export items by EAN (import-ready XML file)",
+    "description": "Exports the items of the PRODUCTS table matching the EANs received in the job execution input (eansCsv, comma-separated), as an import-ready XML file exposed in the job output. Designed to be triggered by another job through data-job-execution-create with wait=true. Not meant to be shared: it always runs on the account that owns the items.",
+    "tasks": [
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_export_request",
+            "description": "Build the Items-Request document filtered on the requested EANs (the XSLT runs on a dummy source and reads the eans parameter)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "file://assets/start.xml",
+                "xslt": "file://assets/build-export-request.xslt",
+                "fileName": "items-request.xml",
+                "params": [
+                    {
+                        "name": "eans",
+                        "select": "${workflow.input.eansCsv}"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "table-export-items",
+            "taskReferenceName": "export_items",
+            "description": "Export the items matching the request",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "tableKey": "PRODUCTS",
+                "mode": "REQUEST",
+                "request": "${build_export_request.output.file}",
+                "fileName": "items.xml"
+            }
+        }
+    ],
+    "outputParameters": {
+        "items_file": "${export_items.output.file}"
+    }
+}

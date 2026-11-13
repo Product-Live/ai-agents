@@ -1,0 +1,85 @@
+{
+    "schema": "1.0",
+    "key": "comment-on-multiple-items",
+    "title": "Comment on multiple items",
+    "titleLocal": {
+        "fra": "Commenter plusieurs items"
+    },
+    "description": "For the items selected in the grid, finds their suggestions and opens one comment thread per suggestion with the message typed by the user. Shows the find, jq, bulk-create pattern in three tasks.",
+    "descriptionLocal": {
+        "fra": "Pour les items sélectionnés dans la grille, retrouve leurs suggestions et ouvre un fil de commentaires par suggestion avec le message saisi par l'utilisateur."
+    },
+    "userInputs": [
+        {
+            "key": "comment",
+            "title": "Comment",
+            "titleLocal": {
+                "fra": "Commentaire"
+            },
+            "description": "Message posted on every thread",
+            "required": true,
+            "type": "TEXT",
+            "default": "Hello"
+        }
+    ],
+    "tasks": [
+        {
+            "name": "data-suggestion-find",
+            "taskReferenceName": "find_suggestions",
+            "description": "Find the suggestions attached to the selected items (the launch context carries the selected item ids in query.value)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "REQUEST",
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "criteria": {
+                            "type": "in",
+                            "caseSensitive": true,
+                            "field": "toItemId",
+                            "value": "${workflow.input.context.query.value}"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "json-transform-jq",
+            "taskReferenceName": "build_operations",
+            "description": "Build one comment_thread operation per suggestion, keys numbered from 1",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "data": {
+                    "message": "${workflow.input.comment}",
+                    "suggestions": "${find_suggestions.output.result.json}"
+                },
+                "queryExpression": ".data.message as $msg | { operations: (.data.suggestions | to_entries | map({ key: ((.key + 1) | tostring), element: { object: \"comment_thread\", targetType: \"suggestion\", targetId: .value.id, comments: [{ message: $msg }] } })) }"
+            }
+        },
+        {
+            "name": "data-comment-thread-create",
+            "taskReferenceName": "create_comment_threads",
+            "description": "Create every thread in a single call",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "operations": "${build_operations.output.result.operations}"
+                    }
+                }
+            }
+        }
+    ],
+    "outputParameters": {
+        "suggestions_found": "${find_suggestions.output.totalElements}",
+        "threads": "${create_comment_threads.output.result.json}"
+    }
+}

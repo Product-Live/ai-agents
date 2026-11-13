@@ -1,0 +1,4 @@
+*.job.zip
+.jobignore
+assets/TESTS/*
+tests/*
