@@ -1,0 +1,410 @@
+{
+    "schema": "1.0",
+    "key": "ai-typo-detection-suggestions",
+    "title": "Detect typos with AI and create suggestions",
+    "icon": "brain",
+    "titleLocal": {
+        "fra": "Détecter les fautes de frappe avec l'IA et créer des suggestions"
+    },
+    "description": "For each item selected in the grid, sends the fields flagged with the ai-agent-check-typo metadata to an AI model (provider and model are settings of the first task) to detect typos, and creates one suggestion per item holding the corrected values. Nothing is written on the items until a user accepts a suggestion.",
+    "descriptionLocal": {
+        "fra": "Pour chaque item sélectionné dans la grille, envoie les champs marqués par la métadonnée ai-agent-check-typo à un modèle d'IA (fournisseur et modèle sont des réglages de la première tâche) pour détecter les fautes de frappe, et crée une suggestion par item avec les valeurs corrigées."
+    },
+    "tasks": [
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "prepare_inputs",
+            "description": "Job configuration: edit the data values below to customise the job (provider, model, metadata key, suggestion name). Validates them and reads the table and screen ids from the launch context",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/prepare-inputs.js",
+                "data": {
+                    "provider": "mistral",
+                    "model": "mistral-small-latest",
+                    "suggestionName": "AI - Typo detection",
+                    "metadataKey": "ai-agent-check-typo",
+                    "context": "${workflow.input.context}"
+                }
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_inputs_valid",
+            "description": "Stop in error if the configuration or the launch context is invalid",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.isValid == true ? 'OK' : 'INVALID'",
+            "inputParameters": {
+                "isValid": "${prepare_inputs.output.result.isValid}"
+            },
+            "decisionCases": {
+                "INVALID": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_invalid_inputs",
+                        "description": "Inputs are invalid",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "FAILED",
+                            "outputParameters": {
+                                "message": "Invalid job configuration: ${prepare_inputs.output.result.validationErrors}"
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        },
+        {
+            "name": "task-batch-execute",
+            "taskReferenceName": "fetch_screens_and_items",
+            "description": "Fetch the launch screen and the selected items in parallel",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "concurrency": 2,
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "json": {
+                        "tasks": [
+                            {
+                                "key": "screens",
+                                "taskName": "data-screen-find",
+                                "inputs": {
+                                    "findMode": "REQUEST",
+                                    "request": {
+                                        "method": "INLINE",
+                                        "contentType": "application/json",
+                                        "model": "default",
+                                        "json": {
+                                            "context": {
+                                                "tableId": "${prepare_inputs.output.result.tableId}"
+                                            },
+                                            "criteria": {
+                                                "type": "eq",
+                                                "field": "id",
+                                                "value": "${prepare_inputs.output.result.screenId}"
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "key": "items",
+                                "taskName": "data-item-find",
+                                "inputs": {
+                                    "findMode": "USER_SELECTION",
+                                    "outputs": [
+                                        {
+                                            "mediaType": "application/json",
+                                            "outputMode": "ATTACHMENT",
+                                            "outputKey": "json"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                },
+                "outputs": [
+                    {
+                        "outputKey": "json",
+                        "outputMode": "INLINE",
+                        "mediaType": "application/json"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_screen_found",
+            "description": "Stop in error if the launch screen was not found",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.count > 0 ? 'OK' : 'NOT_FOUND'",
+            "inputParameters": {
+                "count": "${fetch_screens_and_items.output.result.json[0].output.totalElements}"
+            },
+            "decisionCases": {
+                "NOT_FOUND": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_no_screen",
+                        "description": "Screen not found",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "FAILED",
+                            "outputParameters": {
+                                "message": "Screen '${prepare_inputs.output.result.screenId}' was not found on table '${prepare_inputs.output.result.tableId}'. Relaunch this job from a valid table and screen."
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "extract_field_keys",
+            "description": "Collect the unique field keys carried by the selected items, and count the items",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/extract-field-keys.js",
+                "resources": [
+                    {
+                        "key": "items",
+                        "file": "${fetch_screens_and_items.output.result.json[1].output.result.json}",
+                        "loadAs": "JSON"
+                    }
+                ],
+                "data": {}
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_items_exist",
+            "description": "Complete early if no item is selected",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.itemCount == 0 ? 'EMPTY' : 'OK'",
+            "inputParameters": {
+                "itemCount": "${extract_field_keys.output.result.itemCount}"
+            },
+            "decisionCases": {
+                "EMPTY": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_no_items",
+                        "description": "No item is selected",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "COMPLETED",
+                            "outputParameters": {
+                                "message": "No item is selected. Select the items to check in the grid, then launch this job again."
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_keys_exist",
+            "description": "Complete early if the selected items carry no field value",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.keyCount == 0 ? 'EMPTY' : 'OK'",
+            "inputParameters": {
+                "keyCount": "${extract_field_keys.output.result.keyCount}"
+            },
+            "decisionCases": {
+                "EMPTY": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_no_keys",
+                        "description": "No field value to check",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "COMPLETED",
+                            "outputParameters": {
+                                "message": "The selected items carry no field value. Nothing to check for typos."
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        },
+        {
+            "name": "data-field-find",
+            "taskReferenceName": "find_fields",
+            "description": "Fetch the definitions of those field keys on the table (the metadata flag is read from the definitions)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "REQUEST",
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "context": {
+                            "tableId": "${prepare_inputs.output.result.tableId}"
+                        },
+                        "criteria": {
+                            "type": "in",
+                            "field": "key",
+                            "value": "${extract_field_keys.output.result.keys}"
+                        }
+                    }
+                },
+                "outputs": [
+                    {
+                        "mediaType": "application/json",
+                        "outputMode": "ATTACHMENT",
+                        "outputKey": "json"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "build_ai_batch",
+            "description": "Build one ai-prompt-execute entry per item that holds at least one flagged field with a value, from the prompt template",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/build-ai-batch.js",
+                "resources": [
+                    {
+                        "key": "items",
+                        "file": "${fetch_screens_and_items.output.result.json[1].output.result.json}",
+                        "loadAs": "JSON"
+                    },
+                    {
+                        "key": "fields",
+                        "file": "${find_fields.output.result.json}",
+                        "loadAs": "JSON"
+                    },
+                    {
+                        "key": "promptTemplate",
+                        "file": "file://assets/prompt-template.txt",
+                        "loadAs": "TEXT"
+                    }
+                ],
+                "data": {
+                    "metadataKey": "${prepare_inputs.output.result.metadataKey}",
+                    "provider": "${prepare_inputs.output.result.provider}",
+                    "model": "${prepare_inputs.output.result.model}",
+                    "apiKey": "${workflow.globalVariables.ai_api_key}",
+                    "screenId": "${fetch_screens_and_items.output.result.json[0].output.result.json[0].id}",
+                    "suggestionName": "${prepare_inputs.output.result.suggestionName}"
+                }
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_ai_tasks_exist",
+            "description": "Complete early if no selected item has a flagged field to analyse",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.count == 0 ? 'EMPTY' : 'OK'",
+            "inputParameters": {
+                "count": "${build_ai_batch.output.result.tasksCount}"
+            },
+            "decisionCases": {
+                "EMPTY": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_no_ai_tasks",
+                        "description": "No selected item has flagged fields",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "COMPLETED",
+                            "outputParameters": {
+                                "message": "No selected item has a field with metadata '${prepare_inputs.output.result.metadataKey}'. Nothing to analyse.",
+                                "totalItems": "${build_ai_batch.output.result.totalItems}",
+                                "skippedCount": "${build_ai_batch.output.result.skippedCount}"
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        },
+        {
+            "name": "task-batch-execute",
+            "taskReferenceName": "run_ai_prompts",
+            "description": "Run one ai-prompt-execute per item, five in parallel",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "taskName": "ai-prompt-execute",
+                "concurrency": 5,
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "json": "${build_ai_batch.output.result.tasks}"
+                },
+                "outputs": [
+                    {
+                        "outputKey": "json",
+                        "outputMode": "INLINE",
+                        "mediaType": "application/json"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "build_all_suggestions",
+            "description": "Parse every AI answer and build the suggestion_create operations",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/build-all-suggestions.js",
+                "data": {
+                    "batchResults": "${run_ai_prompts.output.result.json}",
+                    "screenId": "${fetch_screens_and_items.output.result.json[0].output.result.json[0].id}",
+                    "suggestionName": "${prepare_inputs.output.result.suggestionName}"
+                }
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_has_suggestions",
+            "description": "Create the suggestions only if the model found typos",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.has == true ? 'HAS_SUGGESTIONS' : 'NO_SUGGESTIONS'",
+            "inputParameters": {
+                "has": "${build_all_suggestions.output.result.hasSuggestions}"
+            },
+            "decisionCases": {
+                "HAS_SUGGESTIONS": [
+                    {
+                        "name": "data-suggestion-create",
+                        "taskReferenceName": "create_suggestions",
+                        "description": "Create every suggestion in a single call",
+                        "optional": true,
+                        "type": "SUB_WORKFLOW",
+                        "inputParameters": {
+                            "request": {
+                                "method": "INLINE",
+                                "contentType": "application/json",
+                                "model": "default",
+                                "json": {
+                                    "operations": "${build_all_suggestions.output.result.operations}"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        }
+    ],
+    "outputParameters": {
+        "itemsProcessed": "${build_ai_batch.output.result.totalItems}",
+        "itemsAnalyzed": "${build_ai_batch.output.result.tasksCount}",
+        "itemsSkipped": "${build_ai_batch.output.result.skippedCount}",
+        "suggestionsCreated": "${build_all_suggestions.output.result.suggestionsCount}",
+        "aiErrors": "${build_all_suggestions.output.result.errorCount}"
+    },
+    "timeoutSeconds": 1800
+}

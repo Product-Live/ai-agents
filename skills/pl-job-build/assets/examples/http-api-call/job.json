@@ -1,0 +1,141 @@
+{
+    "schema": "1.0",
+    "key": "http-api-call",
+    "title": "Call an HTTP API",
+    "titleLocal": {
+        "fra": "Appeler une API HTTP"
+    },
+    "description": "Two protocol-http-perform calls on the Product-Live API with an ephemeral key generated for the job (PL_KEY authentication): a GET with assertions on the status code, and a POST with a JSON body. Shows timeouts, response modes and how to read status code and JSON body.",
+    "descriptionLocal": {
+        "fra": "Deux appels protocol-http-perform vers l'API Product-Live avec une clé éphémère générée pour le job (authentification PL_KEY) : un GET avec des assertions sur le code de statut, et un POST avec un corps JSON."
+    },
+    "tasks": [
+        {
+            "name": "protocol-http-perform",
+            "taskReferenceName": "get_items",
+            "description": "GET /v1/items with the ephemeral API key of the job's user; fails the task unless the status code is 200 and the response is JSON",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "scheme": "HTTPS",
+                "domain": "api.product-live.com",
+                "path": "/v1/items",
+                "method": "GET",
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "queryParameters": {
+                    "page": "1",
+                    "size": "10"
+                },
+                "authentication": {
+                    "useAuthentication": true,
+                    "type": "PL_KEY"
+                },
+                "connectionTimeOutMilliseconds": 10000,
+                "readTimeOutMilliseconds": 30000,
+                "responses": [
+                    "JSON"
+                ],
+                "assertions": {
+                    "enabled": true,
+                    "failOnError": true,
+                    "assertions": [
+                        {
+                            "name": "Status is 200",
+                            "target": "STATUS_CODE",
+                            "operator": "EQUALS",
+                            "expectedValue": 200
+                        },
+                        {
+                            "name": "Content-Type is JSON",
+                            "target": "HEADER",
+                            "targetKey": "content-type",
+                            "operator": "CONTAINS",
+                            "expectedValue": "application/json"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "protocol-http-perform",
+            "taskReferenceName": "find_items_by_ean",
+            "description": "POST /v1/items/find with a JSON body (find by EAN); the status code is exposed as an output and checked by the next task instead of an assertion",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "scheme": "HTTPS",
+                "domain": "api.product-live.com",
+                "path": "/v1/items/find",
+                "method": "POST",
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "type": "JSON",
+                    "json": {
+                        "keyName": "EAN_13",
+                        "stringEquals": [
+                            "2000000000091"
+                        ]
+                    }
+                },
+                "authentication": {
+                    "useAuthentication": true,
+                    "type": "PL_KEY"
+                },
+                "connectionTimeOutMilliseconds": 10000,
+                "readTimeOutMilliseconds": 30000,
+                "responses": [
+                    "JSON"
+                ],
+                "retrySettings": {
+                    "maxRetries": 2,
+                    "retryDelayMs": 1000,
+                    "backoffStrategy": "EXPONENTIAL"
+                }
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_find_status",
+            "description": "The task succeeds as soon as it got a response, whatever the status code: stop the job in error on anything but 200",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.statusCode == 200 ? 'OK' : 'ERROR'",
+            "inputParameters": {
+                "statusCode": "${find_items_by_ean.output.statusCode}"
+            },
+            "decisionCases": {
+                "ERROR": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_http_error",
+                        "description": "Unexpected HTTP status",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "FAILED",
+                            "outputParameters": {
+                                "message": "The find call returned HTTP ${find_items_by_ean.output.statusCode} ${find_items_by_ean.output.reasonPhrase}",
+                                "curl": "${find_items_by_ean.output.curl}"
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        }
+    ],
+    "outputParameters": {
+        "get_status_code": "${get_items.output.statusCode}",
+        "get_response": "${get_items.output.response.json}",
+        "find_status_code": "${find_items_by_ean.output.statusCode}",
+        "find_response": "${find_items_by_ean.output.response.json}",
+        "find_response_time_ms": "${find_items_by_ean.output.responseTimeMs}"
+    },
+    "timeoutSeconds": 600
+}

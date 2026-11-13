@@ -1,0 +1,815 @@
+<!-- For keys, use capital letters and _ for spaces -->
+<Table key="PL_DEMO_PRODUCTS">
+    <Title>Products (Demo)</Title>
+    <Title-Local lang="fra">Produits (Démo)</Title-Local>
+    <Description>The demo Products table by Product-Live</Description>
+    <Description-Local lang="fra">La table démo Produits par Product-Live</Description-Local>
+    <Color>BLUE</Color>
+    <Position>1</Position>
+    <Schema>
+        <Levels>
+            <Level key="PRODUCT" index="1">
+                <!-- Use singular for level's title -->
+                <Title>Product</Title>
+                <Title-Local lang="fra">Produit</Title-Local>
+            </Level>
+        </Levels>
+        <Partitions>
+            <Partition key="ACTIVES">
+                <Title>Actives</Title>
+                <Title-Local lang="fra">Actifs</Title-Local>
+                <Description>The partition of active products</Description>
+                <Description-Local lang="fra">La partition des produits actifs</Description-Local>
+            </Partition>
+            <Partition key="ARCHIVED">
+                <Title>Archived</Title>
+                <Title-Local lang="fra">Archivés</Title-Local>
+                <Description>The partition of archived products</Description>
+                <Description-Local lang="fra">La partition des produits archivés</Description-Local>
+            </Partition>
+        </Partitions>
+        <Identifiers>
+            <Identifier key="EAN_13" index="1" level="PRODUCT">
+                <Title>EAN 13</Title>
+                <Title-Local lang="fra">EAN 13</Title-Local>
+                <Description>The 13-digit EAN 13 code</Description>
+                <Description-Local lang="fra">Le code EAN 13 sur 13 chiffres</Description-Local>
+            </Identifier>
+        </Identifiers>
+        <Classifications>
+            <Classification key="TYPOLOGY">
+                <Title>Typology</Title>
+                <Title-Local lang="fra">Typologie</Title-Local>
+                <Description>Product classification</Description>
+                <Description-Local lang="fra">La classification des produits</Description-Local>
+                <Categories>
+                    <Category key="HOME_APPLIANCE">
+                        <Title>Home appliance</Title>
+                        <Title-Local lang="fra">Électroménager</Title-Local>
+                    </Category>
+                    <Category key="WASHING_MACHINE" parent="HOME_APPLIANCE">
+                        <Title>Washing machine</Title>
+                        <Title-Local lang="fra">Lave linge</Title-Local>
+                    </Category>
+                    <Category key="FRIDGE" parent="HOME_APPLIANCE">
+                        <Title>Fridge</Title>
+                        <Title-Local lang="fra">Réfrigérateur</Title-Local>
+                    </Category>
+                    <Category key="LAPTOP" parent="HOME_APPLIANCE">
+                        <Title>Laptop</Title>
+                        <Title-Local lang="fra">Ordinateur portable</Title-Local>
+                    </Category>
+                </Categories>
+            </Classification>
+        </Classifications>
+        <Fields>
+            <!-- Fields order does not matter here, order is defined in screens below -->
+            <Field key="TITLE_EN" type="SINGLE-LINE-TEXT" level="PRODUCT">
+                <Title>Title EN</Title>
+                <Title-Local lang="fra">Titre EN</Title-Local>
+                <Description>Product's title in english</Description>
+                <Description-Local lang="fra">Le titre du produit en anglais</Description-Local>
+            </Field>
+            <Field key="DESCRIPTION_EN" type="LONG-TEXT" level="PRODUCT">
+                <Title>Description EN</Title>
+                <Title-Local lang="fra">Description EN</Title-Local>
+                <Description>Product's description in english</Description>
+                <Description-Local lang="fra">La description du produit en anglais</Description-Local>
+            </Field>
+            <Field key="TITLE_FR" type="SINGLE-LINE-TEXT" level="PRODUCT">
+                <Title>Title FR</Title>
+                <Title-Local lang="fra">Titre FR</Title-Local>
+                <Description>Product's title in french</Description>
+                <Description-Local lang="fra">Le titre du produit en français</Description-Local>
+            </Field>
+            <Field key="DESCRIPTION_FR" type="LONG-TEXT" level="PRODUCT">
+                <Title>Description FR</Title>
+                <Title-Local lang="fra">Description FR</Title-Local>
+                <Description>Product's description in french</Description>
+                <Description-Local lang="fra">La description du produit en français</Description-Local>
+            </Field>
+            <Field key="LIFE_CYCLE" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Life cycle</Title>
+                <Title-Local lang="fra">Cycle de vie</Title-Local>
+                <Description>Product's lyfe cycle</Description>
+                <Description-Local lang="fra">Le cycle de vie du produit</Description-Local>
+                <Options>
+                    <Option key="NEW" color="GREEN">
+                        <Title>New</Title>
+                        <Title-Local lang="fra">Nouveau</Title-Local>
+                    </Option>
+                    <Option key="RENEWED" color="BLUE">
+                        <Title>Renewed</Title>
+                        <Title-Local lang="fra">Reconduit</Title-Local>
+                    </Option>
+                    <Option key="ENDED" color="RED">
+                        <Title>Ended</Title>
+                        <Title-Local lang="fra">Terminé</Title-Local>
+                    </Option>
+                </Options>
+            </Field> 
+            <Field key="MAIN_COLOR" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Main color</Title>
+                <Title-Local lang="fra">Couleur principale</Title-Local>
+                <Description>The main color of the product</Description>
+                <Description-Local lang="fra">La couleur principale du produit</Description-Local>
+                <Options>
+                    <Option key="RED">
+                        <Title>Red</Title>
+                        <Title-Local lang="fra">Rouge</Title-Local>
+                    </Option>
+                    <Option key="GREEN">
+                        <Title>Green</Title>
+                        <Title-Local lang="fra">Vert</Title-Local>
+                    </Option>
+                    <Option key="BLUE">
+                        <Title>Blue</Title>
+                        <Title-Local lang="fra">Bleu</Title-Local>
+                    </Option>
+                    <Option key="WHITE">
+                        <Title>White</Title>
+                        <Title-Local lang="fra">Blanc</Title-Local>
+                    </Option>
+                    <Option key="BLACK">
+                        <Title>Black</Title>
+                        <Title-Local lang="fra">Noir</Title-Local>
+                    </Option>
+                    <Option key="GREY">
+                        <Title>Grey</Title>
+                        <Title-Local lang="fra">Gris</Title-Local>
+                    </Option>
+                </Options>
+            </Field> 
+            <Field key="COUNTRY_OF_ORIGIN" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Country of origin</Title>
+                <Title-Local lang="fra">Pays d'origine</Title-Local>
+                <Description>Product's origin</Description>
+                <Description-Local lang="fra">L'origine du produit</Description-Local>
+                <Options>
+                    <Option key="GERMANY">
+                        <Title>Germany</Title>
+                        <Title-Local lang="fra">Allemagne</Title-Local>
+                    </Option>
+                    <Option key="FRANCE">
+                        <Title>France</Title>
+                        <Title-Local lang="fra">France</Title-Local>
+                    </Option>
+                    <Option key="BULGARIA">
+                        <Title>Bulgaria</Title>
+                        <Title-Local lang="fra">Bulgarie</Title-Local>
+                    </Option>
+                    <Option key="CHINA">
+                        <Title>China</Title>
+                        <Title-Local lang="fra">Chine</Title-Local>
+                    </Option>
+                    <Option key="KOREA">
+                        <Title>Korea</Title>
+                        <Title-Local lang="fra">Corée</Title-Local>
+                    </Option>
+                    
+                    <Option key="JAPAN">
+                        <Title>Japan</Title>
+                        <Title-Local lang="fra">Japon</Title-Local>
+                    </Option>
+                </Options>
+            </Field>
+            <Field key="WIDTH_MM" type="NUMBER" level="PRODUCT">
+                <Title>Width</Title>
+                <Title-Local lang="fra">Largeur</Title-Local>
+                <Description>Product's width in millimeters</Description>
+                <Description-Local lang="fra">La largeur du produit en millimètres</Description-Local>
+                <Suffix>mm</Suffix>
+                <Precision>0</Precision>
+            </Field>     
+            <Field key="HEIGHT_MM" type="NUMBER" level="PRODUCT">
+                <Title>Height</Title>
+                <Title-Local lang="fra">Hauteur</Title-Local>
+                <Description>Product's height in millimeters</Description>
+                <Description-Local lang="fra">La hauteur du produit en millimètres</Description-Local>
+                <Suffix>mm</Suffix>
+                <Precision>0</Precision>
+            </Field>     
+            <Field key="DEPTH_MM" type="NUMBER" level="PRODUCT">
+                <Title>Depth</Title>
+                <Title-Local lang="fra">Profondeur</Title-Local>
+                <Description>Product's depth in millimeters</Description>
+                <Description-Local lang="fra">La profondeur du produit en millimètres</Description-Local>
+                <Suffix>mm</Suffix>
+                <Precision>0</Precision>
+            </Field>
+            <Field key="WEIGHT_KG" type="NUMBER" level="PRODUCT">
+                <Title>Weight</Title>
+                <Title-Local lang="fra">Poids</Title-Local>
+                <Description>Product's weight in kilograms</Description>
+                <Description-Local lang="fra">Le poids du produit en kilogrammes</Description-Local>
+                <Suffix>kg</Suffix>
+                <Precision>2</Precision>
+            </Field>
+            <Field key="STOCK" type="NUMBER" level="PRODUCT">
+                <Title>Stock</Title>
+                <Title-Local lang="fra">Stock</Title-Local>
+                <Description>The number of products in stock</Description>
+                <Description-Local lang="fra">Le nombre de produits en stock</Description-Local>
+                <Precision>0</Precision>
+            </Field>     
+            <Field key="NEXT_ARRIVAL" type="DATE" level="PRODUCT">
+                <Title>Next arrival</Title>
+                <Title-Local lang="fra">Prochain arrivage</Title-Local>
+                <Description>The date of the next arrivals</Description>
+                <Description-Local lang="fra">La date des prochains arrivage</Description-Local>
+            </Field>     
+            <Field key="STARTING_PRICE" type="NUMBER" level="PRODUCT">
+                <Title>Starting price</Title>
+                <Title-Local lang="fra">Tarif de base</Title-Local>
+                <Description>The basic price of the product</Description>
+                <Description-Local lang="fra">Le tarif de base du produit</Description-Local>
+                <Suffix>€</Suffix>
+                <Precision>2</Precision>
+            </Field>     
+            <Field key="STORE_PRICE" type="NUMBER" level="PRODUCT">
+                <Title>Store price</Title>
+                <Title-Local lang="fra">Prix magasin</Title-Local>
+                <Description>The price displayed in stores</Description>
+                <Description-Local lang="fra">Le prix affiché en magasin</Description-Local>
+                <Suffix>€</Suffix>
+                <Precision>2</Precision>
+            </Field>     
+            <Field key="MAIN_VIEW" type="IMAGE" level="PRODUCT">
+                <Title>Main view</Title>
+                <Title-Local lang="fra">Vue principale</Title-Local>
+                <Description>The main view of the product</Description>
+                <Description-Local lang="fra">La vue principale du produit</Description-Local>
+            </Field>    
+            <Field key="FRONT_VIEW" type="IMAGE" level="PRODUCT">
+                <Title>Front view</Title>
+                <Title-Local lang="fra">Vue de face</Title-Local>
+                <Description>The front view of the product</Description>
+                <Description-Local lang="fra">La vue de face du produit</Description-Local>
+            </Field>     
+            <Field key="BACK_VIEW" type="IMAGE" level="PRODUCT">
+                <Title>Back view</Title>
+                <Title-Local lang="fra">Vue de dos</Title-Local>
+                <Description>The back view of the product</Description>
+                <Description-Local lang="fra">La vue de dos du produit</Description-Local>
+            </Field>  
+            <Field key="ENERGY_LABEL" type="IMAGE" level="PRODUCT">
+                <Title>Energy label</Title>
+                <Title-Local lang="fra">Etiquette énergétique</Title-Local>
+                <Description>The energy label of the product</Description>
+                <Description-Local lang="fra">L'étiquette énergétique du produit</Description-Local>
+            </Field>  
+            <Field key="INSTALLATION_DIAGRAM" type="IMAGE" level="PRODUCT">
+                <Title>Installation diagram</Title>
+                <Title-Local lang="fra">Schéma d'encastrement</Title-Local>
+                <Description>The installation diagram of the product</Description>
+                <Description-Local lang="fra">Le schéma d'encastrement du produit</Description-Local>
+            </Field>  
+            <Field key="LEFT_VIEW" type="IMAGE" level="PRODUCT">
+                <Title>Left view</Title>
+                <Title-Local lang="fra">Vue gauche</Title-Local>
+                <Description>The left view of the product</Description>
+                <Description-Local lang="fra">La vue de gauche du produit</Description-Local>
+            </Field>  
+            <Field key="RIGHT_VIEW" type="IMAGE" level="PRODUCT">
+                <Title>Right view</Title>
+                <Title-Local lang="fra">Vue droite</Title-Local>
+                <Description>The right view of the product</Description>
+                <Description-Local lang="fra">La vue de droite du produit</Description-Local>
+            </Field>                    
+            <Field key="IN_SITUATION_1" type="IMAGE" level="PRODUCT">
+                <Title>In situation 1</Title>
+                <Title-Local lang="fra">En situation 1</Title-Local>
+                <Description>Product view in situation 1</Description>
+                <Description-Local lang="fra">Vue du produit en situation 1</Description-Local>
+            </Field>                    
+            <Field key="IN_SITUATION_2" type="IMAGE" level="PRODUCT">
+                <Title>In situation 2</Title>
+                <Title-Local lang="fra">En situation 2</Title-Local>
+                <Description>Product view in situation 2</Description>
+                <Description-Local lang="fra">Vue du produit en situation 2</Description-Local>
+            </Field>                    
+            <Field key="INSTRUCTIONS" type="ATTACHMENT" level="PRODUCT">
+                <Title>Instructions</Title>
+                <Title-Local lang="fra">Notice</Title-Local>
+                <Description>Product's instructions</Description>
+                <Description-Local lang="fra">La notice du produit</Description-Local>
+            </Field>
+            <Field key="ENERGY_CLASS" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Energy class</Title>
+                <Title-Local lang="fra">Classe énergétique</Title-Local>
+                <Description>The energy class of the product</Description>
+                <Description-Local lang="fra">La classe énergétique du produit</Description-Local>
+                <Options>
+                    <Option key="A">
+                        <Title>A</Title>
+                        <Title-Local lang="fra">A</Title-Local>
+                    </Option>
+                    <Option key="A+">
+                        <Title>A+</Title>
+                        <Title-Local lang="fra">A+</Title-Local>
+                    </Option>
+                    <Option key="A++">
+                        <Title>A++</Title>
+                        <Title-Local lang="fra">A++</Title-Local>
+                    </Option>
+                    <Option key="A+++">
+                        <Title>A+++</Title>
+                        <Title-Local lang="fra">A+++</Title-Local>
+                    </Option>
+                    <Option key="B">
+                        <Title>B</Title>
+                        <Title-Local lang="fra">B</Title-Local>
+                    </Option>
+                    <Option key="C">
+                        <Title>C</Title>
+                        <Title-Local lang="fra">C</Title-Local>
+                    </Option>
+                    <Option key="D">
+                        <Title>D</Title>
+                        <Title-Local lang="fra">D</Title-Local>
+                    </Option>
+                    <Option key="E">
+                        <Title>E</Title>
+                        <Title-Local lang="fra">E</Title-Local>
+                    </Option>
+                    <Option key="F">
+                        <Title>F</Title>
+                        <Title-Local lang="fra">F</Title-Local>
+                    </Option>
+                </Options>
+            </Field>    
+            <Field key="SOUND_LEVEL" type="NUMBER" level="PRODUCT">
+                <Title>Sound level</Title>
+                <Title-Local lang="fra">Niveau sonore</Title-Local>
+                <Description>The sound level of the product</Description>
+                <Description-Local lang="fra">Le niveau sonore du produit</Description-Local>
+                <Suffix>db</Suffix>
+                <Precision>0</Precision>
+            </Field>
+            <Field key="CHILD_SAFETY" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Child safety</Title>
+                <Title-Local lang="fra">Sécurité enfants</Title-Local>
+                <Description>Does the product have child safety?</Description>
+                <Description-Local lang="fra">Est-ce que le produit a une sécurité enfant?</Description-Local>
+                <Options>
+                    <Option key="YES">
+                        <Title>Yes</Title>
+                        <Title-Local lang="fra">Oui</Title-Local>
+                    </Option>
+                    <Option key="NO">
+                        <Title>No</Title>
+                        <Title-Local lang="fra">Non</Title-Local>
+                    </Option>
+                </Options>
+            </Field>   
+            <Field key="EGG_TRAY" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Egg tray</Title>
+                <Title-Local lang="fra">Bac à oeufs</Title-Local>
+                <Description>Does the product have an egg tray?</Description>
+                <Description-Local lang="fra">Est-ce que le produit a un bac à oeufs?</Description-Local>
+                <Options>
+                    <Option key="YES">
+                        <Title>Yes</Title>
+                        <Title-Local lang="fra">Oui</Title-Local>
+                    </Option>
+                    <Option key="NO">
+                        <Title>No</Title>
+                        <Title-Local lang="fra">Non</Title-Local>
+                    </Option>
+                </Options>
+            </Field>   
+            <Field key="ICE_TRAY" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Ice tray</Title>
+                <Title-Local lang="fra">Bac à glaçons</Title-Local>
+                <Description>Does the product have an ice cube tray?</Description>
+                <Description-Local lang="fra">Est-ce que le produit a un bac à glaçons?</Description-Local>
+                <Options>
+                    <Option key="YES">
+                        <Title>Yes</Title>
+                        <Title-Local lang="fra">Oui</Title-Local>
+                    </Option>
+                    <Option key="NO">
+                        <Title>No</Title>
+                        <Title-Local lang="fra">Non</Title-Local>
+                    </Option>
+                </Options>
+            </Field>   
+            <Field key="DELAYED_START" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Delayed start</Title>
+                <Title-Local lang="fra">Départ différé</Title-Local>
+                <Description>Does the product have the delayed start function?</Description>
+                <Description-Local lang="fra">Est-ce que le produit a la fonction départ différé?</Description-Local>
+                <Options>
+                    <Option key="YES">
+                        <Title>Yes</Title>
+                        <Title-Local lang="fra">Oui</Title-Local>
+                    </Option>
+                    <Option key="NO">
+                        <Title>No</Title>
+                        <Title-Local lang="fra">Non</Title-Local>
+                    </Option>
+                </Options>
+            </Field>   
+            <Field key="DELAYED_END" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Delayed end</Title>
+                <Title-Local lang="fra">Fin différée</Title-Local>
+                <Description>Does the product have the delayed end function?</Description>
+                <Description-Local lang="fra">Est-ce que le produit a la fonction fin différée?</Description-Local>
+                <Options>
+                    <Option key="YES">
+                        <Title>Yes</Title>
+                        <Title-Local lang="fra">Oui</Title-Local>
+                    </Option>
+                    <Option key="NO">
+                        <Title>No</Title>
+                        <Title-Local lang="fra">Non</Title-Local>
+                    </Option>
+                </Options>
+            </Field>   
+            <Field key="HARD_DRIVE_TYPE" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Hard drive type</Title>
+                <Title-Local lang="fra">Type de disque dur</Title-Local>
+                <Description>What is the hard drive type of the product?</Description>
+                <Description-Local lang="fra">Quel est le type de disque dur du produit?</Description-Local>
+                <Options>
+                    <Option key="HDD">
+                        <Title>HDD</Title>
+                        <Title-Local lang="fra">HDD</Title-Local>
+                    </Option>
+                    <Option key="SSD">
+                        <Title>SSD</Title>
+                        <Title-Local lang="fra">SSD</Title-Local>
+                    </Option>
+                    <Option key="HDD_SSD">
+                        <Title>HDD &amp; SSD</Title>
+                        <Title-Local lang="fra">HDD &amp; SSD</Title-Local>
+                    </Option>
+                </Options>
+            </Field>   
+            <Field key="CONNECTORS" type="MULTIPLE-SELECT-QUANTIFIED" level="PRODUCT">
+                <Title>Connectors</Title>
+                <Title-Local lang="fra">Connectiques</Title-Local>
+                <Description>What connectors are available on the product?</Description>
+                <Description-Local lang="fra">Quels sont les connectiques disponibles sur le produit?</Description-Local>
+                <Options>
+                    <Option key="USB">
+                        <Title>USB</Title>
+                        <Title-Local lang="fra">USB</Title-Local>
+                    </Option>
+                    <Option key="USB-C">
+                        <Title>USB C</Title>
+                        <Title-Local lang="fra">USB C</Title-Local>
+                    </Option>
+                    <Option key="VGA">
+                        <Title>VGA</Title>
+                        <Title-Local lang="fra">VGA</Title-Local>
+                    </Option>
+                    <Option key="HDMI">
+                        <Title>HDMI</Title>
+                        <Title-Local lang="fra">HDMI</Title-Local>
+                    </Option>
+                </Options>
+            </Field>   
+            <Field key="BATTERY_INCLUDED" type="SINGLE-SELECT" level="PRODUCT">
+                <Title>Battery included</Title>
+                <Title-Local lang="fra">Batterie incluse</Title-Local>
+                <Description>Is the battery included with the product?</Description>
+                <Description-Local lang="fra">Est-ce que la batterie est incluse avec le produit?</Description-Local>
+                <Options>
+                    <Option key="YES">
+                        <Title>Yes</Title>
+                        <Title-Local lang="fra">Oui</Title-Local>
+                    </Option>
+                    <Option key="NO">
+                        <Title>No</Title>
+                        <Title-Local lang="fra">Non</Title-Local>
+                    </Option>
+                </Options>
+            </Field>  
+            <Field key="BATTERY_CAPACITY" type="NUMBER" level="PRODUCT">
+                <Title>Battery capacity</Title>
+                <Title-Local lang="fra">Capacité batterie</Title-Local>
+                <Description>What is the battery capacity in Watt / Hours?</Description>
+                <Description-Local lang="fra">Quelle est la capacité de la batterie en Watt/Heures?</Description-Local>
+                <Suffix>Watt/h</Suffix>
+                <Precision>0</Precision>
+            </Field>
+        </Fields>
+        <Matrix>
+            <!-- Fields order does not matter here, displayed order is defined in screens below -->
+            <Common>
+                <Field key="TITLE_EN" />
+                <Field key="DESCRIPTION_EN" />
+                <Field key="TITLE_FR" />
+                <Field key="DESCRIPTION_FR" />
+                <Field key="LIFE_CYCLE" />
+                <Field key="MAIN_COLOR" />
+                <Field key="COUNTRY_OF_ORIGIN" />
+                <Field key="WIDTH_MM" />
+                <Field key="HEIGHT_MM" />
+                <Field key="DEPTH_MM" />
+                <Field key="WEIGHT_KG" />
+                <Field key="STOCK" />
+                <Field key="NEXT_ARRIVAL" />
+                <Field key="STARTING_PRICE" />
+                <Field key="STORE_PRICE" />
+                <Field key="MAIN_VIEW" />
+                <Field key="INSTRUCTIONS" />
+            </Common>
+            <Specific classification="TYPOLOGY" category="FRIDGE">
+                <Field key="ENERGY_CLASS" />
+                <Field key="SOUND_LEVEL" />
+                <Field key="CHILD_SAFETY" />
+                <Field key="EGG_TRAY" />
+                <Field key="ICE_TRAY" />
+                <Field key="FRONT_VIEW" />
+                <Field key="ENERGY_LABEL" />
+                <Field key="INSTALLATION_DIAGRAM" />
+            </Specific>
+            <Specific classification="TYPOLOGY" category="WASHING_MACHINE">
+                <Field key="ENERGY_CLASS" />
+                <Field key="SOUND_LEVEL" />
+                <Field key="CHILD_SAFETY" />
+                <Field key="DELAYED_START" />
+                <Field key="DELAYED_END" />
+                <Field key="FRONT_VIEW" />
+                <Field key="ENERGY_LABEL" />
+                <Field key="INSTALLATION_DIAGRAM" />
+                <Field key="IN_SITUATION_1" />
+                <Field key="IN_SITUATION_2" />
+            </Specific>
+            <Specific classification="TYPOLOGY" category="LAPTOP">
+                <Field key="HARD_DRIVE_TYPE" />
+                <Field key="CONNECTORS" />
+                <Field key="BATTERY_INCLUDED" />
+                <Field key="BATTERY_CAPACITY" />
+                <Field key="BACK_VIEW" />
+                <Field key="LEFT_VIEW" />
+                <Field key="RIGHT_VIEW" />
+            </Specific>
+        </Matrix>
+        <!-- Conditional formattings -->
+        <Conditional-Formattings>
+            <Conditional-Formatting key="DATA_COMPLIANCE" level="PRODUCT">
+                <Title>Data compliance</Title>
+                <Title-Local lang="fra">Conformité des données</Title-Local>
+                <Description>Data compliance, click on a cell to find out what remains to be done</Description>
+                <Description-Local lang="fra">La conformité de donnée, cliquez sur une cellue pour savoir ce qu'il reste à faire</Description-Local>
+                <Default-Status key="VALID">
+                    <Title>Valid</Title>
+                    <Title-Local lang="fra">Valide</Title-Local>
+                    <Color>GREEN</Color>
+                </Default-Status>
+                <Statuses>
+                    <Status key="UNVALID">
+                        <Title>Unvalid</Title>
+                        <Title-Local lang="fra">Non valide</Title-Local>
+                        <Color>RED</Color>
+                        <Priority>1</Priority>
+                        <Rules>
+                            <Common>
+                                <Identifier key="EAN_13">
+                                    <Rule-Required />
+                                    <Rule-Barcode type="EAN13" />
+                                </Identifier>
+                                <Classification key="TYPOLOGY">
+                                    <Rule-Required />
+                                    <Rule-Is-Leaf />
+                                </Classification>
+                                <Field key="TITLE_EN">
+                                    <Rule-Required />
+                                    <Rule-Min-Length min="3" />
+                                </Field>   
+                                <Field key="MAIN_COLOR">
+                                    <Rule-Required />
+                                </Field>                                   
+                                <Field key="COUNTRY_OF_ORIGIN">
+                                    <Rule-Required />
+                                </Field>   
+                                <Field key="MAIN_VIEW">
+                                    <Rule-Required />
+                                </Field>  
+                                <Field key="STORE_PRICE">
+                                    <Rule-Must-Be-Greater-Than-Another-Field field="STARTING_PRICE" />
+                                </Field> 
+                            </Common>
+                            <Specific classification="TYPOLOGY" category="FRIDGE">
+                                <Field key="ENERGY_CLASS">
+                                    <Rule-Required />
+                                </Field>
+                                <Field key="SOUND_LEVEL">
+                                    <Rule-Required />
+                                </Field>
+                                <Field key="CHILD_SAFETY">
+                                    <Rule-Required />
+                                </Field>
+                            </Specific>
+                            <Specific classification="TYPOLOGY" category="WASHING_MACHINE">
+                                <Field key="ENERGY_CLASS">
+                                    <Rule-Required />
+                                </Field>
+                            </Specific>
+                            <Specific classification="TYPOLOGY" category="LAPTOP">
+                                <Field key="HARD_DRIVE_TYPE">
+                                    <Rule-Required />
+                                </Field>
+                                <Field key="CONNECTORS">
+                                    <Rule-Required />
+                                </Field>
+                                <Field key="BATTERY_CAPACITY">
+                                    <Rule-Required-If-Another-Field-Is-Not-Empty field="BATTERY_INCLUDED" />
+                                </Field>
+                            </Specific>
+                        </Rules>
+                    </Status>
+                    <Status key="RECOMMANDED">
+                        <Title>Recommanded</Title>
+                        <Title-Local lang="fra">Recommandé</Title-Local>
+                        <Color>ORANGE</Color>
+                        <Priority>2</Priority>
+                        <Rules>
+                            <Common>
+                                <Field key="TITLE_EN">
+                                    <Rule-Min-Length min="5" />
+                                    <Rule-Max-Length max="40" />
+                                </Field>
+                                <Field key="DESCRIPTION_EN">
+                                    <Rule-Required />
+                                </Field>   
+                                <Field key="WIDTH_MM">
+                                    <Rule-Required />
+                                </Field>
+                                <Field key="HEIGHT_MM">
+                                    <Rule-Required />
+                                </Field>
+                                <Field key="DEPTH_MM">
+                                    <Rule-Required />
+                                </Field>
+                                <Field key="WEIGHT_KG">
+                                    <Rule-Required />
+                                </Field>
+                            </Common>
+                        </Rules>
+                    </Status>                    
+                </Statuses>
+            </Conditional-Formatting>
+        </Conditional-Formattings>
+        <Sections>
+            <Section key="INFORMATIONS">
+                <Title>Informations</Title>
+                <Title-Local lang="fra">Informations</Title-Local>
+            </Section>
+            <Section key="LOGISTIC">
+                <Title>Logistic</Title>
+                <Title-Local lang="fra">Logistique</Title-Local>
+            </Section>
+            <Section key="PRICING">
+                <Title>Pricing</Title>
+                <Title-Local lang="fra">Tarifs</Title-Local>
+            </Section>
+            <Section key="MEDIA">
+                <Title>Media</Title>
+                <Title-Local lang="fra">Media</Title-Local>
+            </Section>
+            <Section key="SPECIFICS_FRIDGE">
+                <Title>Specifics fridge</Title>
+                <Title-Local lang="fra">Spécifiques réfrigérateur</Title-Local>
+            </Section>
+            <Section key="SPECIFICS_WASHING_MACHINE">
+                <Title>Specifics washing machine</Title>
+                <Title-Local lang="fra">Spécifiques lave linge</Title-Local>
+            </Section>
+            <Section key="SPECIFICS_LAPTOP">
+                <Title>Specifics laptop</Title>
+                <Title-Local lang="fra">Spécifiques ordinateur portable</Title-Local>
+            </Section>
+        </Sections>
+        <Screens>
+            <Screen key="ALL_COLUMNS" level="PRODUCT">
+                <Title>All columns</Title>
+                <Title-Local lang="fra">Toutes les colonnes</Title-Local>
+                <Position>1</Position>
+                <Grid>
+                    <Line-Height>SHORT</Line-Height>
+                    <Common>
+                        <Section key="INFORMATIONS" position="1">
+                            <Column-Identifier key="EAN_13" position="1" read-only="true" fixed="true" />
+                            <Column-Field key="MAIN_VIEW" position="2" width="SMALL" fixed="true" />
+                            <Column-Conditional-Formatting key="DATA_COMPLIANCE" position="3" fixed="true" />                            
+                            <Column-Classification key="TYPOLOGY" position="4" />
+                            <Column-Field key="TITLE_EN" position="5" width="MEDIUM" />
+                            <Column-Field key="TITLE_FR" position="6" width="MEDIUM" />
+                            <Column-Field key="DESCRIPTION_EN" position="7" width="LARGE" />
+                            <Column-Field key="DESCRIPTION_FR" position="8" width="LARGE" />
+                            <Column-Field key="LIFE_CYCLE" position="9" width="SMALL" />
+                            <Column-Field key="MAIN_COLOR" position="10" width="SMALL" />
+                            <Column-Field key="INSTRUCTIONS" position="11" />
+                        </Section>
+                        <Section key="LOGISTIC" position="2">
+                            <Column-Field key="COUNTRY_OF_ORIGIN" position="1" width="SMALL" />
+                            <Column-Field key="WIDTH_MM" position="2" width="SMALL" />
+                            <Column-Field key="HEIGHT_MM" position="3" width="SMALL" />
+                            <Column-Field key="DEPTH_MM" position="4" width="SMALL" />
+                            <Column-Field key="WEIGHT_KG" position="5" width="SMALL" />
+                            <Column-Field key="STOCK" position="6" width="SMALL" />
+                            <Column-Field key="NEXT_ARRIVAL" position="7" width="SMALL" />
+                        </Section>
+                        <Section key="PRICING" position="3">
+                            <Column-Field key="STARTING_PRICE" position="1" width="SMALL" />
+                            <Column-Field key="STORE_PRICE" position="2" width="SMALL" />
+                        </Section>
+                    </Common>
+                    <Specific classification="TYPOLOGY" category="FRIDGE">
+                        <Section key="SPECIFICS_FRIDGE" position="1">
+                            <Column-Field key="ENERGY_CLASS" position="1" />
+                            <Column-Field key="SOUND_LEVEL" position="2" />
+                            <Column-Field key="CHILD_SAFETY" position="3" />
+                            <Column-Field key="EGG_TRAY" position="4" />
+                            <Column-Field key="ICE_TRAY" position="5" />
+                        </Section>
+                        <Section key="MEDIA" position="2">
+                            <Column-Field key="FRONT_VIEW" position="1" width="SMALL" />
+                            <Column-Field key="ENERGY_LABEL" position="2" width="SMALL" />
+                            <Column-Field key="INSTALLATION_DIAGRAM" position="3" width="SMALL" />
+                        </Section>
+                    </Specific>
+                    <Specific classification="TYPOLOGY" category="WASHING_MACHINE">
+                        <Section key="SPECIFICS_WASHING_MACHINE" position="1">
+                            <Column-Field key="ENERGY_CLASS" position="1" />
+                            <Column-Field key="SOUND_LEVEL" position="2" />
+                            <Column-Field key="CHILD_SAFETY" position="3" />
+                            <Column-Field key="DELAYED_START" position="4" />
+                            <Column-Field key="DELAYED_END" position="5" />
+                        </Section>
+                        <Section key="MEDIA" position="2">
+                            <Column-Field key="FRONT_VIEW" position="1" width="SMALL" />
+                            <Column-Field key="ENERGY_LABEL" position="2" width="SMALL" />
+                            <Column-Field key="INSTALLATION_DIAGRAM" position="3" width="SMALL" />
+                            <Column-Field key="IN_SITUATION_1" position="4" width="SMALL" />
+                            <Column-Field key="IN_SITUATION_2" position="5" width="SMALL" />
+                        </Section>
+                    </Specific>
+                    <Specific classification="TYPOLOGY" category="LAPTOP">
+                        <Section key="SPECIFICS_LAPTOP" position="1">
+                            <Column-Field key="HARD_DRIVE_TYPE" position="1" />
+                            <Column-Field key="CONNECTORS" position="2" />
+                            <Column-Field key="BATTERY_INCLUDED" position="3" />
+                            <Column-Field key="BATTERY_CAPACITY" position="4" />
+                        </Section>
+                        <Section key="MEDIA" position="2">
+                            <Column-Field key="BACK_VIEW" position="1" width="SMALL" />
+                            <Column-Field key="LEFT_VIEW" position="2" width="SMALL" />
+                            <Column-Field key="RIGHT_VIEW" position="3" width="SMALL" />
+                        </Section>
+                    </Specific>
+                </Grid>
+            </Screen>
+            <Screen key="MEDIA" level="PRODUCT">
+                <Title>Media</Title>
+                <Title-Local lang="fra">Media</Title-Local>
+                <Position>2</Position>
+                <Grid>
+                    <Line-Height>EXTRA_TALL</Line-Height>
+                    <Common>
+                        <Section key="INFORMATIONS" position="1">
+                            <Column-Identifier key="EAN_13" position="1" read-only="true" fixed="true" />
+                            <Column-Conditional-Formatting key="DATA_COMPLIANCE" position="2" fixed="true" />                            
+                            <Column-Classification key="TYPOLOGY" position="3" read-only="true" fixed="true" />
+                            <Column-Field key="TITLE_EN" position="4" read-only="true" width="LARGE" fixed="true" />
+                            <Column-Field key="DESCRIPTION_EN" position="5" read-only="true" width="LARGE" />
+                            <Column-Field key="LIFE_CYCLE" position="6" read-only="true" width="SMALL" />
+                            <Column-Field key="MAIN_COLOR" position="7" read-only="true" width="SMALL" />
+                        </Section>
+                        <Section key="MEDIA" position="2">
+                            <Column-Field key="INSTRUCTIONS" position="1" />
+                            <Column-Field key="MAIN_VIEW" position="2" width="LARGE" />
+                        </Section>
+                    </Common>
+                    <Specific classification="TYPOLOGY" category="FRIDGE">
+                        <Section key="MEDIA" position="2">
+                            <Column-Field key="FRONT_VIEW" position="1" width="LARGE" />
+                            <Column-Field key="ENERGY_LABEL" position="2" width="LARGE" />
+                            <Column-Field key="INSTALLATION_DIAGRAM" position="3" width="LARGE" />
+                        </Section>
+                    </Specific>
+                    <Specific classification="TYPOLOGY" category="WASHING_MACHINE">
+                        <Section key="MEDIA" position="2">
+                            <Column-Field key="FRONT_VIEW" position="1" width="LARGE" />
+                            <Column-Field key="ENERGY_LABEL" position="2" width="LARGE" />
+                            <Column-Field key="INSTALLATION_DIAGRAM" position="3" width="LARGE" />
+                            <Column-Field key="IN_SITUATION_1" position="4" width="LARGE" />
+                            <Column-Field key="IN_SITUATION_2" position="5" width="LARGE" />
+                        </Section>
+                    </Specific>
+                    <Specific classification="TYPOLOGY" category="LAPTOP">
+                        <Section key="MEDIA" position="2">
+                            <Column-Field key="BACK_VIEW" position="1" width="LARGE" />
+                            <Column-Field key="LEFT_VIEW" position="2" width="LARGE" />
+                            <Column-Field key="RIGHT_VIEW" position="3" width="LARGE" />
+                        </Section>
+                    </Specific>
+                </Grid>
+            </Screen>
+        </Screens>
+    </Schema>
+</Table>

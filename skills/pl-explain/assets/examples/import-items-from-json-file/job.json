@@ -1,0 +1,61 @@
+{
+    "schema": "1.0",
+    "key": "import-items-from-json-file",
+    "title": "Import items from a JSON file",
+    "icon": "file-add",
+    "titleLocal": {
+        "fra": "Importer des produits depuis un fichier JSON"
+    },
+    "description": "Reads a JSON file uploaded by the user directly from an XSLT 3.0 stylesheet (json-to-xml over unparsed-text), builds the Data Factory items XML document and imports it into the PL_DEMO_PRODUCTS table.",
+    "descriptionLocal": {
+        "fra": "Lit un fichier JSON déposé par l'utilisateur directement depuis une feuille XSLT 3.0 (json-to-xml sur unparsed-text), construit le document XML des items Data Factory et l'importe dans la table PL_DEMO_PRODUCTS."
+    },
+    "userInputs": [
+        {
+            "key": "file",
+            "title": "JSON file",
+            "titleLocal": {
+                "fra": "Fichier JSON"
+            },
+            "description": "An array of objects with identifiers, classification and fields maps (see tests/input-example.json)",
+            "required": true,
+            "type": "FILE"
+        }
+    ],
+    "tasks": [
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_items",
+            "description": "Build the items document from the JSON file. The stylesheet runs on a dummy source (empty.xml) and reads the uploaded file through its jsonFile parameter",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "file://assets/empty.xml",
+                "xslt": "file://assets/json-to-items.xslt",
+                "fileName": "items.xml",
+                "params": [
+                    {
+                        "name": "jsonFile",
+                        "select": "${workflow.input.file}"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "table-import-items",
+            "taskReferenceName": "import_items",
+            "description": "Create or update the items of the PL_DEMO_PRODUCTS table",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${build_items.output.file}",
+                "mode": "CREATE_OR_UPDATE"
+            }
+        }
+    ],
+    "outputParameters": {
+        "items_file": "${build_items.output.file}",
+        "import_report": "${import_items.output.report}"
+    }
+}

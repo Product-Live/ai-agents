@@ -1,0 +1,65 @@
+{
+    "schema": "1.0",
+    "key": "list-users-to-excel",
+    "title": "List every user of the account in an Excel file",
+    "icon": "file-excel",
+    "titleLocal": {
+        "fra": "Lister les utilisateurs du compte dans un fichier Excel"
+    },
+    "description": "Finds every user of the account, converts the XML result into a Generate-Excel request with an XSLT and renders a one-sheet workbook. The smallest complete find-to-Excel job.",
+    "descriptionLocal": {
+        "fra": "Recherche tous les utilisateurs du compte, convertit le résultat XML en requête Generate-Excel avec une XSLT et génère un classeur d'une feuille."
+    },
+    "tasks": [
+        {
+            "name": "data-user-find",
+            "taskReferenceName": "find_users",
+            "description": "Find every user of the current account, rendered as an XML attachment (xpath-functions vocabulary)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "findMode": "ALL",
+                "outputs": [
+                    {
+                        "mediaType": "application/xml",
+                        "outputMode": "ATTACHMENT",
+                        "outputKey": "xml"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_excel_request",
+            "description": "Turn the users XML into a Generate-Excel request (one header row, one row per user)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${find_users.output.result.xml}",
+                "xslt": "file://assets/users-to-excel.xslt",
+                "fileName": "generate-excel-request.xml"
+            }
+        },
+        {
+            "name": "file-generation-xlsx",
+            "taskReferenceName": "generate_excel",
+            "description": "Render the workbook with the shipped template",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${build_excel_request.output.file}",
+                "templates": [
+                    {
+                        "key": "report",
+                        "file": "file://assets/report.xlsx"
+                    }
+                ]
+            }
+        }
+    ],
+    "outputParameters": {
+        "files": "${generate_excel.output.files}",
+        "users_found": "${find_users.output.totalElements}"
+    }
+}

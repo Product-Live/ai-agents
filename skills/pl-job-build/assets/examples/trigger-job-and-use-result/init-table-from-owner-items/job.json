@@ -1,0 +1,115 @@
+{
+    "schema": "1.0",
+    "key": "init-table-from-owner-items",
+    "title": "Initialize my table from the owner account items",
+    "titleLocal": {
+        "fra": "Initialiser ma table depuis les items du compte propriétaire"
+    },
+    "description": "Shared job, owned by the account that owns the items and shared with its partner accounts. Run by a partner, it triggers the export-items-by-ean job on the owner account (data-job-execution-create with wait=true and an API key of the owner stored in a protected global variable), waits for its completion, then imports the produced items file on the shared table, on the running account's side.",
+    "userInputs": [
+        {
+            "key": "eans",
+            "title": "EANs of the items to import (one per line)",
+            "titleLocal": {
+                "fra": "EAN des items à importer (un par ligne)"
+            },
+            "description": "One EAN per line; duplicates and blank lines are ignored",
+            "required": true,
+            "type": "TEXTAREA",
+            "default": ""
+        }
+    ],
+    "tasks": [
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "parse_eans",
+            "description": "Parse the EAN list into a comma-separated string (the only value the export job consumes) and a count",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/parse-eans.js",
+                "data": {
+                    "eans": "${workflow.input.eans}"
+                }
+            }
+        },
+        {
+            "name": "data-job-find",
+            "taskReferenceName": "find_export_job",
+            "description": "Find the export job on the owner account, by job key, with the owner's API key",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "apiKey": "${workflow.globalVariables.owner_api_key}",
+                "findMode": "REQUEST",
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "criteria": {
+                            "type": "eq",
+                            "field": "key",
+                            "value": "export-items-by-ean"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "data-job-execution-create",
+            "taskReferenceName": "run_export_on_owner_account",
+            "description": "Run the export job on the owner account and wait for its result (polling every 10 seconds, up to 30 minutes)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "apiKey": "${workflow.globalVariables.owner_api_key}",
+                "request": {
+                    "method": "INLINE",
+                    "contentType": "application/json",
+                    "model": "default",
+                    "json": {
+                        "operations": [
+                            {
+                                "key": "a",
+                                "context": {},
+                                "element": {
+                                    "jobId": "${find_export_job.output.result.json[0].id}",
+                                    "info": {
+                                        "title": "Export items by EAN (triggered by a shared job)"
+                                    },
+                                    "input": {
+                                        "eansCsv": "${parse_eans.output.result.eansCsv}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                "wait": true,
+                "waitOptions": {
+                    "pollingIntervalSeconds": 10,
+                    "timeoutSeconds": 1800
+                }
+            }
+        },
+        {
+            "name": "table-import-items",
+            "taskReferenceName": "import_items",
+            "description": "Import the exported items on the shared table, on the running account's side",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${run_export_on_owner_account.output.result.json[0].response.output.items_file}",
+                "accountKey": "${workflow.globalVariables.owner_account_key}",
+                "mode": "CREATE_OR_UPDATE"
+            }
+        }
+    ],
+    "outputParameters": {
+        "requested_eans_count": "${parse_eans.output.result.count}",
+        "exported_items_file": "${run_export_on_owner_account.output.result.json[0].response.output.items_file}",
+        "import_report": "${import_items.output.report}"
+    },
+    "timeoutSeconds": 3600
+}

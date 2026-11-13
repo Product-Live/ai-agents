@@ -1,0 +1,209 @@
+{
+    "schema": "1.0",
+    "key": "nightly-sftp-csv-import",
+    "title": "Nightly import of a CSV file from an SFTP server",
+    "icon": "file-add",
+    "titleLocal": {
+        "fra": "Import nocturne d'un fichier CSV depuis un serveur SFTP"
+    },
+    "description": "Scheduled job: fetches the oldest waiting CSV file of an SFTP folder, stops cleanly when there is none, converts it to the items XML format, imports the items into the PL_DEMO_PRODUCTS table, moves the file to a processed folder and emails the import report, failing when that email is not sent. Connection settings come from global variables.",
+    "descriptionLocal": {
+        "fra": "Job planifié : récupère le plus ancien fichier CSV en attente dans un dossier SFTP, s'arrête proprement s'il n'y en a pas, le convertit au format XML des items, importe les items dans la table PL_DEMO_PRODUCTS, déplace le fichier dans un dossier processed et envoie le rapport d'import par e-mail, et échoue si cet e-mail n'est pas parti. Les paramètres de connexion viennent des variables globales."
+    },
+    "tasks": [
+        {
+            "name": "protocol-ftp-get",
+            "taskReferenceName": "ftp_get",
+            "description": "Fetch the oldest CSV file waiting in the input folder (at most one file per run, so a backlog drains oldest first)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "connection": "SFTP",
+                "host": "${workflow.globalVariables.sftp_host}",
+                "port": "${workflow.globalVariables.sftp_port}",
+                "username": "${workflow.globalVariables.sftp_username}",
+                "password": "${workflow.globalVariables.sftp_password}",
+                "mode": "PARAMETERS",
+                "remoteFolder": "/input/",
+                "sort": "LAST_MODIFIED_ASC",
+                "filter": "\\.csv$",
+                "maxFiles": 1
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_file_found",
+            "description": "No file in the folder is a normal situation for a scheduled pickup: complete the job with a message instead of failing",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "value-param",
+            "expression": "noFile",
+            "inputParameters": {
+                "noFile": "${ftp_get.output.noFile}"
+            },
+            "decisionCases": {
+                "YES": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_no_file",
+                        "description": "Nothing to import tonight",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "COMPLETED",
+                            "outputParameters": {
+                                "message": "No CSV file found in the input folder. Nothing was imported."
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        },
+        {
+            "name": "file-conversion-csv-to-xml",
+            "taskReferenceName": "csv_to_xml",
+            "description": "Convert the CSV file into the generic Csv-To-Xml grid",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${ftp_get.output.file}",
+                "columnSeparator": ";",
+                "textDelimiter": "\"",
+                "escapeCharacter": "\""
+            }
+        },
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_items",
+            "description": "Map the grid to the items XML format (header row gives the field keys)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${csv_to_xml.output.file}",
+                "xslt": "file://assets/csv-to-items.xslt",
+                "fileName": "items.xml"
+            }
+        },
+        {
+            "name": "table-import-items",
+            "taskReferenceName": "import_items",
+            "description": "Create or update the items of the PL_DEMO_PRODUCTS table",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "${build_items.output.file}",
+                "mode": "CREATE_OR_UPDATE"
+            }
+        },
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_move_request",
+            "description": "Build the Ftp-Move request from the listing of the fetched file: /input/<name> to /processed/<name>",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${ftp_get.output.listing}",
+                "xslt": "file://assets/build-move-request.xslt",
+                "fileName": "ftp-move-request.xml",
+                "params": [
+                    {
+                        "name": "target_folder",
+                        "select": "/processed/"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "protocol-ftp-move",
+            "taskReferenceName": "ftp_move",
+            "description": "Move the imported file to the processed folder so that it is not imported twice",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "connection": "SFTP",
+                "host": "${workflow.globalVariables.sftp_host}",
+                "port": "${workflow.globalVariables.sftp_port}",
+                "username": "${workflow.globalVariables.sftp_username}",
+                "password": "${workflow.globalVariables.sftp_password}",
+                "request": "${build_move_request.output.file}"
+            }
+        },
+        {
+            "name": "file-transformation-xslt",
+            "taskReferenceName": "build_report_email",
+            "description": "Turn the import report into an HTML email (recipients and subject are pl-mail-* meta tags in the head)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${import_items.output.report}",
+                "xslt": "file://assets/import-report-email.xslt",
+                "fileName": "import-report-email.html",
+                "params": [
+                    {
+                        "name": "recipients",
+                        "select": "${workflow.globalVariables.import_report_recipients}"
+                    },
+                    {
+                        "name": "listing",
+                        "select": "${ftp_get.output.listing}"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "notification-send-email",
+            "taskReferenceName": "send_report_email",
+            "description": "Email the report; optional so that a mail problem never fails an import that succeeded",
+            "optional": true,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "mode": "FILE",
+                "file": "${build_report_email.output.file}"
+            }
+        },
+        {
+            "name": "switch",
+            "taskReferenceName": "check_email_sent",
+            "description": "Unattended job: nobody watches the execution, so a report email that was not sent (limit exceeded or task failed) must fail the job",
+            "optional": false,
+            "type": "SWITCH",
+            "evaluatorType": "javascript",
+            "expression": "$.sent == 'YES' ? 'SENT' : 'NOT_SENT'",
+            "inputParameters": {
+                "sent": "${send_report_email.output.allEmailsSent}"
+            },
+            "decisionCases": {
+                "NOT_SENT": [
+                    {
+                        "name": "terminate",
+                        "taskReferenceName": "terminate_email_not_sent",
+                        "description": "The import ran but the report email was not sent",
+                        "optional": false,
+                        "type": "TERMINATE",
+                        "inputParameters": {
+                            "terminationStatus": "FAILED",
+                            "outputParameters": {
+                                "message": "The file was imported and moved, but the report email was not sent. Read import_report for the result of the import.",
+                                "import_report": "${import_items.output.report}"
+                            }
+                        }
+                    }
+                ]
+            },
+            "defaultCase": []
+        }
+    ],
+    "outputParameters": {
+        "imported_file": "${ftp_get.output.file}",
+        "items_file": "${build_items.output.file}",
+        "import_report": "${import_items.output.report}",
+        "file_moved": "${ftp_move.output.allFilesMoved}",
+        "email_sent": "${send_report_email.output.allEmailsSent}"
+    },
+    "timeoutSeconds": 1800
+}

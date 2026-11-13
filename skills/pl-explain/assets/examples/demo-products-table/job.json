@@ -1,0 +1,41 @@
+{
+    "schema": "1.0",
+    "key": "demo-products-table",
+    "title": "Create the demo products table",
+    "icon": "file-add",
+    "titleLocal": {
+        "fra": "Créer la table de démonstration Produits"
+    },
+    "description": "Creates (or refreshes) the PL_DEMO_PRODUCTS table from a schema file, then imports a small set of demo products. This is the fixture used by the other examples of this library.",
+    "descriptionLocal": {
+        "fra": "Crée (ou met à jour) la table PL_DEMO_PRODUCTS à partir d'un fichier de schéma, puis importe un petit jeu de produits de démonstration. C'est la table utilisée par les autres exemples de cette bibliothèque."
+    },
+    "tasks": [
+        {
+            "name": "table-import-schema",
+            "taskReferenceName": "import_schema",
+            "description": "Create or update the PL_DEMO_PRODUCTS table from the schema file (EXHAUSTIVE mode: the file is the complete schema)",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "file://assets/table.xml",
+                "mode": "EXHAUSTIVE"
+            }
+        },
+        {
+            "name": "table-import-items",
+            "taskReferenceName": "import_items",
+            "description": "Import the demo products into the ACTIVES partition",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "request": "file://assets/items.xml",
+                "mode": "CREATE_OR_UPDATE"
+            }
+        }
+    ],
+    "outputParameters": {
+        "schema_report": "${import_schema.output.report}",
+        "items_report": "${import_items.output.report}"
+    }
+}
