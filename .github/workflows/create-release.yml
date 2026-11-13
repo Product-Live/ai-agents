@@ -1,0 +1,84 @@
+name: create-release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  create-release:
+    name: Create tag and release
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Extract and validate version
+        id: version
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          fail() {
+            echo "::error::${1}"
+            exit 1
+          }
+
+          if [ ! -f VERSION ]; then
+            fail "VERSION file not found at repository root"
+          fi
+          version="$(tr -d '[:space:]' < VERSION | sed -e 's/^[vV]//')"
+
+          semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+          if ! [[ "${version}" =~ ${semver} ]]; then
+            fail "VERSION does not contain a valid semver version, got: '${version}'"
+          fi
+
+          if [ "${PR_TITLE}" != "chore(release): ${version}" ]; then
+            fail "PR title '${PR_TITLE}' is not consistent with VERSION '${version}' (expected 'chore(release): ${version}')"
+          fi
+          if [ "${HEAD_BRANCH}" != "publish/v${version}" ]; then
+            fail "Branch '${HEAD_BRANCH}' is not consistent with VERSION '${version}' (expected 'publish/v${version}')"
+          fi
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "::notice::Using version ${version} from VERSION"
+
+      - name: Create tag and release on merge commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          VERSION_NUM: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          tag="v${VERSION_NUM}"
+
+          notes_file="$(mktemp)"
+          awk -v v="${VERSION_NUM}" '
+            BEGIN { esc = v; gsub(/\./, "\\.", esc); pat = "^## \\[?" esc "\\]" }
+            $0 ~ pat { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > "${notes_file}" 2>/dev/null || true
+          if [ ! -s "${notes_file}" ]; then
+            echo "Release ${tag}" > "${notes_file}"
+          fi
+
+          gh release create "${tag}" \
+            --target "${MERGE_SHA}" \
+            --title "${tag}" \
+            --notes-file "${notes_file}"
+
+          echo "::notice::Created tag and release ${tag} pointing at merge commit ${MERGE_SHA}"

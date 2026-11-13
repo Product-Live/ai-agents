@@ -1,0 +1,75 @@
+name: pr-content-check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+
+jobs:
+  pr-content-check:
+    name: Validate release PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Check PR title, branch, VERSION and CHANGELOG.md
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          fail() {
+            echo "::error::${1}"
+            exit 1
+          }
+
+          semver='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
+
+          # 1. PR title must be "chore(release): X.Y.Z"
+          if ! [[ "${PR_TITLE}" =~ ^chore\(release\):\ ${semver}$ ]]; then
+            fail "PR title must follow 'chore(release): X.Y.Z' with a semver version, got: '${PR_TITLE}'"
+          fi
+          pr_version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+
+          # 2. Branch name must be "publish/vX.Y.Z"
+          if ! [[ "${HEAD_BRANCH}" =~ ^publish/v${semver}$ ]]; then
+            fail "Branch name must follow 'publish/vX.Y.Z' with a semver version, got: '${HEAD_BRANCH}'"
+          fi
+          branch_version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+
+          if [ "${pr_version}" != "${branch_version}" ]; then
+            fail "Version mismatch: PR title has '${pr_version}' but branch '${HEAD_BRANCH}' has '${branch_version}'"
+          fi
+
+          # 3. VERSION file must contain the same version
+          if [ ! -f VERSION ]; then
+            fail "VERSION file not found at repository root"
+          fi
+          version_file="$(tr -d '[:space:]' < VERSION | sed 's/^v//')"
+          if [ "${version_file}" != "${pr_version}" ]; then
+            fail "VERSION contains '${version_file}' but expected '${pr_version}'"
+          fi
+
+          # 4. Highest section in CHANGELOG.md must contain the same version
+          if [ ! -f CHANGELOG.md ]; then
+            fail "CHANGELOG.md not found at repository root"
+          fi
+          changelog_version="$(sed -n -E 's/^## \[?([0-9]+\.[0-9]+\.[0-9]+)\]?.*/\1/p' CHANGELOG.md | head -n 1)"
+          if [ -z "${changelog_version}" ]; then
+            fail "No version heading (## [X.Y.Z]) found in CHANGELOG.md"
+          fi
+          if [ "${changelog_version}" != "${pr_version}" ]; then
+            fail "Highest CHANGELOG.md section is '${changelog_version}' but expected '${pr_version}'"
+          fi
+
+          echo "::notice::Release PR checks passed for version ${pr_version}"
