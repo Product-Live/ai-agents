@@ -14,14 +14,15 @@ Prefer JSON flows:
 - shape JSON with `json-transform-jq`;
 - use `code-execute-javascript` for logic, parsing and building files, including the XML request that a task requires when that task documents such an input (for example the `<Generate-Excel>` request of `file-generation-xlsx` or the items document of `table-import-items`).
 
-Use XML tasks and XSLT only when necessary, that is in one of these cases:
+Use XML tasks and XSLT when one of these cases applies:
 
 1. The task that does the job only accepts or only produces XML, and no JSON alternative fits (section 4).
 2. The volume is above the documented limits of the JSON tasks (section 5).
 3. The brief imposes an XML source or target: an XML feed, an XML file to deliver, a platform export or report to process.
 4. An instruction asks for it.
+5. The job needs a complete screen definition, including common and specific columns, and exporting the schema avoids several reads and joins (section 1.1).
 
-Write the case that applies in the task `description` and list it in the report (section 8).
+Write the case that applies in the README implementation note of the task and list it in the report (section 8).
 
 Why (a house choice, not a platform requirement):
 
@@ -30,6 +31,16 @@ Why (a house choice, not a platform requirement):
 - Each engine where it is strongest: jq for declarative reshaping, JavaScript for regex, dates, aggregation and file content, XSLT for XML (`references/knowledge/scripting.md`).
 
 JSON first does not replace design principle 1 (SKILL.md): a catalog task that reads, writes, sends or generates still beats a script. A script replaces a conversion plus a stylesheet, never a platform action.
+
+### 1.1 Choose the data route from the requested column scope
+
+Prefer `data-*` tasks when their documented inputs and outputs cover the requested scope. Compare the whole flow, including the reads, joins and transformation needed to produce the result.
+
+- All fields of the items: start with `data-item-find` for values and `data-field-find` for field titles and types. For Excel, `code-execute-javascript` can build the XML request consumed by `file-generation-xlsx`. Apply the documented volume limits and value handling rules in sections 5 and 6.4.
+- Common and specific columns of a screen: `table-export-schema` provides the screen definition in one XML document. Reconstructing it with `data-*` tasks can require screen section and column reads, then joins with field definitions. Prefer the schema export when it simplifies this complete reconstruction. Pairing it with `table-export-items` and XSLT is appropriate for an Excel export; record the scope and reason in the task descriptions and report.
+- `file-generation-xlsx` requires an XML request. This requirement alone does not select the source tasks: both a JSON flow and an XML flow can produce that request.
+
+Keep these scopes distinct in the transformation. A union of properties present on exported items does not reproduce a screen's common and specific columns. Claim screen coverage only when the transformation reads those screen definitions.
 
 ## 2. Alpha tasks: recent tasks, used like the others
 
@@ -91,7 +102,7 @@ Documented limits, side by side (`references/knowledge/limits.md` and the task f
 | API rate | the `data-*` tasks perform their requests on the Product-Live API on behalf of the current user; the API reference gives a default rate limit of 100 requests per minute, and the `task-batch-execute` page says that the public API limits still apply to each entry; how many requests one task execution sends is not documented (recommendation of this skill: a larger `pageSize` and a lower batch `concurrency` keep the request rate down); `data-publication-create`: 100 requests per minute; suggestions: 100 per minute | not stated for the file tasks |
 | Inline JSON | keep every task input small: a payload limit exists (a release note mentions the message logged when it is exceeded) but its value is not published; jq reads only its inline `data`; larger JSON travels as a file that a script loads with `resources` | files between tasks |
 | Scripts | `code-execute-javascript`: 10 minutes for the whole task; the size of a resource is not documented | `file-transformation-xslt`: input up to 500 MB; `file-conversion-csv-to-xml` 250 MB and `file-conversion-json-to-xml` 100 MB, UTF-8 only |
-| jq | no time limit documented (bound the job with `timeoutSeconds`); no date functions; no global variables as inputs | - |
+| jq | time limit not documented. Date functions and global variables as inputs are unsupported. | - |
 | Lookups | 1000 keys per lookup and per `taskName` per request | - |
 | Fan-out | `task-batch-execute`: 1 to 5 parallel slots, 7200 seconds per batch and per slot | `file-generation-xlsx` and `file-generation-pdf`: 50 files per execution |
 
@@ -105,23 +116,51 @@ How to apply them:
 
 ### 6.1 Read the grid selection
 
-- `findMode: "USER_SELECTION"` is documented on the `data-item-find` page and in `references/knowledge/job-context.md`: the task builds the request from the grid selection and resolves the level from the launch screen (the `levelId` input overrides it). It belongs to `data-item-find` only (the shared `findMode` enum of the other fetch tasks lists `ALL` and `REQUEST`); the validator accepts it there.
+- `findMode: "USER_SELECTION"` is documented on the `data-item-find` page and in `references/knowledge/job-context.md`: the task builds the request from the grid selection and resolves the level from the launch screen (the `levelId` input overrides it). It belongs to `data-item-find` only (the shared `findMode` enum of the other fetch tasks lists `ALL` and `REQUEST`); the validator accepts it there. USER_SELECTION ignores request.json.options, so it reads every field of the selected items. Use REQUEST when includedFieldKeys or limit is needed.
 - Or read the selection with `findMode: "REQUEST"`: `request.json.criteria` is `"${workflow.input.context.query}"` (the documentation says the launch query can be passed as is to a find task) and `request.json.context.partitionId` is `"${workflow.input.context.view.partition.id}"`. On a multi-level table, add `request.json.context.levelId`: the level of the launch screen, which `data-screen-find` returns (`levelId`).
 - Guard first: `query` exists only when `queryMode` is `API_V1`. It is absent when nothing is selected and when the grid filter cannot be written in the Find format (`LEGACY`). A `SWITCH` on `${workflow.input.context.queryMode}` ends the other cases with a `TERMINATE` and a user-facing message: skeleton in `references/patterns.md`, P2.
+- If launch origin or other available context must also be checked, combine these compatible preconditions in that initial `SWITCH`. Preserve their cases, messages and termination statuses as described in `references/knowledge/control-flow.md`, section 1.3. Keep checks of later task results after their producer.
 - When the job must also accept `LEGACY` selections, take the XML route: `table-export-items` with `mode: "USER_SELECTION"` handles every selection format (`job-context.md`, section 4).
+
+#### Grid jobs tested through the API
+
+When the grid is the production entry point and the brief supplies sample products for a remote test, build one job with a first `code-execute-javascript` task such as `resolve_launch`. Pass it `${workflow.input.context}` and the optional technical input `${workflow.input.testSelection}`. Route on `context.jobActionOrigin`: an API launch also has a context. Return the effective table, partition, screen and item lookup mode once.
+
+- `APP`: use the launch view and check that a grid selection is present (see `references/knowledge/job-context.md`). Ignore any test input, even when the selection or view is missing. End with a useful message if a required value is missing. Use `data-item-find` in `USER_SELECTION` mode so the task reads the native selection. The resolver does not need to rebuild the grid query.
+- `API`: read the separate `testSelection` object. Use the connected extension's `list_tables`, `list_partitions`, `list_screens` and `list_fields` to prepare its values before launching. Use the actual identifier field key on the intended table. Resolve ambiguous business choices with the user. For example, the job can accept this `run_job` input:
+
+```json
+{
+  "input": {
+    "testSelection": {
+      "tableId": "101",
+      "partitionId": "102",
+      "screenId": "103",
+      "fieldKey": "PRODUCT_CODE",
+      "values": ["0001", "0002"]
+    }
+  }
+}
+```
+
+Keep this object out of the job's `userInputs` form. Validate the required scope and a nonempty array of identifier strings. Trim and deduplicate the values while preserving leading zeros. Build one `in` criterion over `item.fields` with the given key and values. Use it in `data-item-find` with `findMode: "REQUEST"` scoped to the partition and level. Before enrichment or writes, verify exactly one item matches each distinct test identifier. End explicitly on incomplete input or unsupported origin. An empty selection must not trigger a table-wide read.
+
+Resolve the level from the effective screen when needed (`data-screen-find`). Feed one shared `data-field-find` the effective table and level and the requested metadata criteria. Use a `SWITCH` for the two item reads and expose the result of the executed branch through the same workflow variable. Subsequent tasks iterate over the returned items, use their IDs and the effective screen for suggestions, and report each outcome independently of the test input.
+
+Exercise the resolver with an app selection plus conflicting test parameters, an app launch missing its selection, and an API launch with valid and empty identifier lists. One remote API run can test the shared processing for all sample products. Report native selection coverage separately: it requires a launch from the grid.
 
 ### 6.2 Large results and JSON files
 
 - Above 1000 elements, or when the result would make the next task input too long, declare `"outputs": [{"mediaType": "application/json", "outputMode": "ATTACHMENT", "outputKey": "json"}]`: `${<ref>.output.result.json}` is then a file (`references/knowledge/wiring.md`, section 4). The outputs table of the data tasks allows this combination, and the `export-job-executions-to-excel` and `ai-typo-detection-suggestions` examples use it.
 - Read that file in `code-execute-javascript`: `"resources": [{"key": "items", "file": "${<ref>.output.result.json}", "loadAs": "JSON"}]`, then pick the resource by its `key`. The file normally holds the array of elements; the example scripts also accept an object that wraps the array, because the exact content of the file is not documented.
-- Keep the payload small: `options.includedFieldKeys` on `data-item-find`, a `criteria` rather than `ALL`, `options.limit` when only the first elements matter.
+- Keep the payload small: in REQUEST or ALL, use options.includedFieldKeys and options.limit on data-item-find. Reject an empty computed whitelist: it returns every field. Read computed field keys from an INLINE output. With REQUEST, guard against an absent launch query before passing it as criteria.
 - `findOptions` (partition scopes) and `pageSize` are documented on the `data-item-find` page and accepted by the validator. The VS Code extension schema does not list them, so the editor may flag them: keep them when the job needs them.
 
 ### 6.3 Write an XML or HTML file from a script
 
 - Set `response: "FILE"` and an `outputFileName` (`items.xml`, `excel-request.xml`, `report.html`): the returned string is written as is, and `${<ref>.output.result}` is the file object to pass to the FILE input of the next task.
 - Escape `&`, `<`, `>`, `"` and `'` in every value written into XML or HTML, and start an XML document with `<?xml version="1.0" encoding="UTF-8"?>`, as the script of the `export-job-executions-to-excel` example does.
-- Follow, element by element, the grammar of the reference file of the task that consumes the document. Validate it with `file-validation-xsd` and the task's `xsdKey` when the platform publishes one (the list is in `references/knowledge/scripting.md`, section 5).
+- Follow, element by element, the grammar of the reference file of the task that consumes the document. During development, `file-validation-xsd` and the task's published `xsdKey` can diagnose a generated request (the list is in `references/knowledge/scripting.md`, section 5). Remove this diagnostic task from the final job.
 - A JSON request file for a data task is written the same way and passed as `"request": {"method": "ATTACHMENT", "contentType": "application/json", "model": "default", "file": "${<ref>.output.result}"}`.
 - A script returns one file per execution. Several files from one step (one email per recipient, one PDF per item) need XSLT in `FILES` or `REQUEST` mode, or one script per file in `task-batch-execute`.
 - File objects passed in `data` (for example `"files": "${generate_excel.output.files}"`) give the script their `url` and, usually, their `name` (the property set varies by producer): enough to fill `pl-mail-attachments` or an `<Archives>` request without reading an XML `listing`.
@@ -148,12 +187,30 @@ Summarised here, defined once elsewhere:
 | Script assets (JavaScript, jq, XSLT) | `references/asset-guidelines.md`: English names, every documented input shape handled, a stop only on purpose, linted with `scripts/lint-script.js` |
 | Job shapes | `references/patterns.md`: the JSON route first, the XML route as the fallback |
 | Framing questions and their defaults | `references/questions.md` |
+| Typical use cases and required choices | `references/use-cases.md`: consult the matching case before design |
 | Pre-flight and review checks | `references/checklist.md` |
 | Final report | `references/report-format.md` |
 | Guards, idempotence, secrets, outputs | SKILL.md, "Design principles" |
 
+### 7.1 README implementation notes
+
+Every job README includes an Implementation notes section after its short Objective and Outcome sections. Keep it aligned with the implemented job when creating or modifying a package.
+
+Write one short note per task, identified by its `taskReferenceName`, in execution order. Include tasks inside branches and loops; group them under their parent when that makes the flow easier to follow. Explain why the task is present, the inputs and outputs that matter, and any limit, fallback or failure handling needed to understand the choice. A compact table is suitable. Do not copy all input parameters or repeat the full task catalog.
+
+Describe what the implementation does, without presenting validation or packaging as proof of execution. Variables to create, setup and import steps remain in the final report.
+
+### 7.2 Descriptions in job.json
+
+The `description` of the job and of each task are read by the people who launch the job and follow its executions, not by developers. Write them for those users and keep the technical documentation in the README implementation notes (section 7.1).
+
+- Job `description`: one or two short sentences. Say what the job does for the user and what to do before launching it, for example "Select the products in the grid, then launch the job to get suggestions from the web."
+- Task `description`: one short sentence, about 15 words, that says what the step does in business terms, for example "Read the selected products" or "Create the suggestions to review".
+- Leave out of descriptions: the design rationale, the guideline case that justifies a task, input names and values, references to documentation or other tasks, limits and failure handling. They go to the README implementation note of the task and, for departures from these guidelines, to the report.
+- Keep the description of a TERMINATE task short as well; the message shown to the user goes in its `outputParameters`.
+
 ## 8. Departures, modify and review
 
-- Every XML task or XSLT asset used where this file prefers the JSON route carries its reason (a case of section 1) in the task `description`, and the report lists it under "Instructions and guidelines" (`references/report-format.md`).
+- Every XML task or XSLT asset used where this file prefers the JSON route carries its reason (a case of section 1) in its README implementation note, and the report lists it under "Instructions and guidelines" (`references/report-format.md`).
 - Modify mode: new parts follow these guidelines; a working XML part stays as it is unless the change request touches it or asks for the JSON route.
 - Review mode: a departure without a reason is a low-severity finding whose fix proposes the JSON route; it is applied only on request.

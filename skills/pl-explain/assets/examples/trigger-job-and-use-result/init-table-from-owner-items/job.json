@@ -110,6 +110,5 @@
         "requested_eans_count": "${parse_eans.output.result.count}",
         "exported_items_file": "${run_export_on_owner_account.output.result.json[0].response.output.items_file}",
         "import_report": "${import_items.output.report}"
-    },
-    "timeoutSeconds": 3600
+    }
 }

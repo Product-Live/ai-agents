@@ -46,7 +46,7 @@ Find the fields (schema columns) of a table: identifiers, text fields, numbers, 
 | request.json.context | OBJECT | yes, even with findMode = ALL | - | - | Scope of the search. |
 | request.json.context.tableId | STRING | yes | - | - | Id of the table whose fields are searched. |
 
-Searchable fields seen in the documentation: `key` (for example `TITLE_EN`), `type` (for example `SINGLE-LINE-TEXT`), `title` (`search`); sort by `key`.
+Searchable fields seen in the documentation: `key` (for example `TITLE_EN`), `type` (for example `SINGLE-LINE-TEXT`), `title` (`search`), `levelId` and `metadata.<key>`; sort by `key`. Metadata values are strings, for example `"true"`, and the match ignores case. Combine metadata, levelId and field type criteria with `and` and `queries`.
 
 ### Request grammar (shared by every data-*-find task)
 

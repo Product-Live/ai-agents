@@ -6,15 +6,15 @@
     "titleLocal": {
         "fra": "Détecter les fautes de frappe avec l'IA et créer des suggestions"
     },
-    "description": "For each item selected in the grid, sends the fields flagged with the ai-agent-check-typo metadata to an AI model (provider and model are settings of the first task) to detect typos, and creates one suggestion per item holding the corrected values. Nothing is written on the items until a user accepts a suggestion.",
+    "description": "For each item selected in the grid, sends the fields flagged with the ai-typo-check metadata to an AI model (provider and model are settings of the first task) to detect typos, and creates one suggestion per item holding the corrected values. Nothing is written on the items until a user accepts a suggestion.",
     "descriptionLocal": {
-        "fra": "Pour chaque item sélectionné dans la grille, envoie les champs marqués par la métadonnée ai-agent-check-typo à un modèle d'IA (fournisseur et modèle sont des réglages de la première tâche) pour détecter les fautes de frappe, et crée une suggestion par item avec les valeurs corrigées."
+        "fra": "Pour chaque item sélectionné dans la grille, envoie les champs marqués par la métadonnée ai-typo-check à un modèle d'IA (fournisseur et modèle sont des réglages de la première tâche) pour détecter les fautes de frappe, et crée une suggestion par item avec les valeurs corrigées."
     },
     "tasks": [
         {
             "name": "code-execute-javascript",
             "taskReferenceName": "prepare_inputs",
-            "description": "Job configuration: edit the data values below to customise the job (provider, model, metadata key, suggestion name). Validates them and reads the table and screen ids from the launch context",
+            "description": "Hold the job settings (provider, model, metadata key, suggestion name) and check the launch context",
             "optional": false,
             "type": "SUB_WORKFLOW",
             "inputParameters": {
@@ -23,7 +23,7 @@
                     "provider": "mistral",
                     "model": "mistral-small-latest",
                     "suggestionName": "AI - Typo detection",
-                    "metadataKey": "ai-agent-check-typo",
+                    "metadataKey": "ai-typo-check",
                     "context": "${workflow.input.context}"
                 }
             }
@@ -261,12 +261,12 @@
         },
         {
             "name": "code-execute-javascript",
-            "taskReferenceName": "build_ai_batch",
-            "description": "Build one ai-prompt-execute entry per item that holds at least one flagged field with a value, from the prompt template",
+            "taskReferenceName": "build_ai_plan",
+            "description": "Build one credential-free prompt per item with a flagged value",
             "optional": false,
             "type": "SUB_WORKFLOW",
             "inputParameters": {
-                "expressionFile": "file://assets/build-ai-batch.js",
+                "expressionFile": "file://assets/build-ai-plan.js",
                 "resources": [
                     {
                         "key": "items",
@@ -285,31 +285,26 @@
                     }
                 ],
                 "data": {
-                    "metadataKey": "${prepare_inputs.output.result.metadataKey}",
-                    "provider": "${prepare_inputs.output.result.provider}",
-                    "model": "${prepare_inputs.output.result.model}",
-                    "apiKey": "${workflow.globalVariables.ai_api_key}",
-                    "screenId": "${fetch_screens_and_items.output.result.json[0].output.result.json[0].id}",
-                    "suggestionName": "${prepare_inputs.output.result.suggestionName}"
+                    "metadataKey": "${prepare_inputs.output.result.metadataKey}"
                 }
             }
         },
         {
             "name": "switch",
-            "taskReferenceName": "check_ai_tasks_exist",
-            "description": "Complete early if no selected item has a flagged field to analyse",
+            "taskReferenceName": "check_ai_items_exist",
+            "description": "Complete before the loop when no selected item has a flagged field to analyse",
             "optional": false,
             "type": "SWITCH",
             "evaluatorType": "javascript",
             "expression": "$.count == 0 ? 'EMPTY' : 'OK'",
             "inputParameters": {
-                "count": "${build_ai_batch.output.result.tasksCount}"
+                "count": "${build_ai_plan.output.result.itemCount}"
             },
             "decisionCases": {
                 "EMPTY": [
                     {
                         "name": "terminate",
-                        "taskReferenceName": "terminate_no_ai_tasks",
+                        "taskReferenceName": "terminate_no_ai_items",
                         "description": "No selected item has flagged fields",
                         "optional": false,
                         "type": "TERMINATE",
@@ -317,8 +312,8 @@
                             "terminationStatus": "COMPLETED",
                             "outputParameters": {
                                 "message": "No selected item has a field with metadata '${prepare_inputs.output.result.metadataKey}'. Nothing to analyse.",
-                                "totalItems": "${build_ai_batch.output.result.totalItems}",
-                                "skippedCount": "${build_ai_batch.output.result.skippedCount}"
+                                "totalItems": "${build_ai_plan.output.result.totalItems}",
+                                "skippedCount": "${build_ai_plan.output.result.skippedCount}"
                             }
                         }
                     }
@@ -327,27 +322,104 @@
             "defaultCase": []
         },
         {
-            "name": "task-batch-execute",
-            "taskReferenceName": "run_ai_prompts",
-            "description": "Run one ai-prompt-execute per item, five in parallel",
+            "name": "loop",
+            "taskReferenceName": "analyze_items",
+            "description": "Process each prompt sequentially so the protected API key binds directly to the declared AI task",
             "optional": false,
-            "type": "SUB_WORKFLOW",
+            "type": "DO_WHILE",
             "inputParameters": {
-                "taskName": "ai-prompt-execute",
-                "concurrency": 5,
-                "request": {
-                    "method": "INLINE",
-                    "contentType": "application/json",
-                    "json": "${build_ai_batch.output.result.tasks}"
-                },
-                "outputs": [
-                    {
-                        "outputKey": "json",
-                        "outputMode": "INLINE",
-                        "mediaType": "application/json"
+                "elements": "${build_ai_plan.output.result.elements}"
+            },
+            "loopCondition": "if ($.analyze_items['iteration'] >= $.elements.length) { false; } else { true; }",
+            "loopOver": [
+                {
+                    "name": "code-execute-javascript",
+                    "taskReferenceName": "current_item",
+                    "description": "Select the prompt using the one-based loop iteration",
+                    "optional": false,
+                    "type": "SUB_WORKFLOW",
+                    "inputParameters": {
+                        "expression": "return $.data.elements[Number($.data.iteration) - 1];",
+                        "data": {
+                            "elements": "${analyze_items.input.elements}",
+                            "iteration": "${analyze_items.output.iteration}"
+                        }
                     }
-                ]
-            }
+                },
+                {
+                    "name": "ai-prompt-execute",
+                    "taskReferenceName": "check_item_typos",
+                    "description": "Check one item with the protected API key bound only to the connection input",
+                    "optional": true,
+                    "type": "SUB_WORKFLOW",
+                    "inputParameters": {
+                        "provider": "${prepare_inputs.output.result.provider}",
+                        "model": "${prepare_inputs.output.result.model}",
+                        "apiKey": "${workflow.globalVariables.ai_api_key}",
+                        "prompt": "${current_item.output.result.prompt}",
+                        "responseFormat": "json_object",
+                        "maxTokens": 1024,
+                        "failOnTruncation": true
+                    }
+                },
+                {
+                    "name": "switch",
+                    "taskReferenceName": "check_ai_status",
+                    "description": "Handle a failed optional AI task before reading answer outputs",
+                    "optional": false,
+                    "type": "SWITCH",
+                    "inputParameters": {
+                        "status": "${check_item_typos.status}"
+                    },
+                    "evaluatorType": "value-param",
+                    "expression": "status",
+                    "decisionCases": {
+                        "COMPLETED_WITH_ERRORS": [
+                            {
+                                "name": "set-variable",
+                                "taskReferenceName": "remember_ai_failure",
+                                "description": "Record this failure and continue with the next item",
+                                "optional": false,
+                                "type": "SET_VARIABLE",
+                                "inputParameters": {
+                                    "ai_item_result": {
+                                        "success": false
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "defaultCase": [
+                        {
+                            "name": "set-variable",
+                            "taskReferenceName": "remember_ai_answer",
+                            "description": "Keep only the answer content for parsing after the loop",
+                            "optional": false,
+                            "type": "SET_VARIABLE",
+                            "inputParameters": {
+                                "ai_item_result": {
+                                    "success": true,
+                                    "content": "${check_item_typos.output.content}"
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "code-execute-javascript",
+                    "taskReferenceName": "collect_ai_result",
+                    "description": "Attach the item id to the selected branch result for loop aggregation",
+                    "optional": false,
+                    "type": "SUB_WORKFLOW",
+                    "inputParameters": {
+                        "expression": "return { itemId: $.data.itemId, success: $.data.result.success === true, content: $.data.result.content };",
+                        "data": {
+                            "itemId": "${current_item.output.result.itemId}",
+                            "result": "${workflow.variables.ai_item_result}"
+                        }
+                    }
+                }
+            ]
         },
         {
             "name": "code-execute-javascript",
@@ -358,7 +430,7 @@
             "inputParameters": {
                 "expressionFile": "file://assets/build-all-suggestions.js",
                 "data": {
-                    "batchResults": "${run_ai_prompts.output.result.json}",
+                    "loopOutput": "${analyze_items.output}",
                     "screenId": "${fetch_screens_and_items.output.result.json[0].output.result.json[0].id}",
                     "suggestionName": "${prepare_inputs.output.result.suggestionName}"
                 }
@@ -391,20 +463,84 @@
                                 "json": {
                                     "operations": "${build_all_suggestions.output.result.operations}"
                                 }
-                            }
+                            },
+                            "failOnError": false
                         }
+                    },
+                    {
+                        "name": "switch",
+                        "taskReferenceName": "check_creation_status",
+                        "description": "Read creation responses only when the optional task has completed without task failure",
+                        "optional": false,
+                        "type": "SWITCH",
+                        "inputParameters": {
+                            "status": "${create_suggestions.status}"
+                        },
+                        "evaluatorType": "value-param",
+                        "expression": "status",
+                        "decisionCases": {
+                            "COMPLETED_WITH_ERRORS": [
+                                {
+                                    "name": "set-variable",
+                                    "taskReferenceName": "remember_creation_failure",
+                                    "description": "Keep an empty result list so failed creations are counted",
+                                    "optional": false,
+                                    "type": "SET_VARIABLE",
+                                    "inputParameters": {
+                                        "creation_results": []
+                                    }
+                                }
+                            ]
+                        },
+                        "defaultCase": [
+                            {
+                                "name": "set-variable",
+                                "taskReferenceName": "remember_created_suggestions",
+                                "description": "Keep actual per-operation responses for the final count",
+                                "optional": false,
+                                "type": "SET_VARIABLE",
+                                "inputParameters": {
+                                    "creation_results": "${create_suggestions.output.result.json}"
+                                }
+                            }
+                        ]
                     }
                 ]
             },
-            "defaultCase": []
+            "defaultCase": [
+                {
+                    "name": "set-variable",
+                    "taskReferenceName": "remember_no_suggestions",
+                    "description": "Keep an empty result list when no corrections were prepared",
+                    "optional": false,
+                    "type": "SET_VARIABLE",
+                    "inputParameters": {
+                        "creation_results": []
+                    }
+                }
+            ]
+        },
+        {
+            "name": "code-execute-javascript",
+            "taskReferenceName": "summarize_creations",
+            "description": "Count returned suggestion ids and distinguish rejected or failed creations",
+            "optional": false,
+            "type": "SUB_WORKFLOW",
+            "inputParameters": {
+                "expressionFile": "file://assets/summarize-creations.js",
+                "data": {
+                    "results": "${workflow.variables.creation_results}",
+                    "expectedCount": "${build_all_suggestions.output.result.operationCount}"
+                }
+            }
         }
     ],
     "outputParameters": {
-        "itemsProcessed": "${build_ai_batch.output.result.totalItems}",
-        "itemsAnalyzed": "${build_ai_batch.output.result.tasksCount}",
-        "itemsSkipped": "${build_ai_batch.output.result.skippedCount}",
-        "suggestionsCreated": "${build_all_suggestions.output.result.suggestionsCount}",
-        "aiErrors": "${build_all_suggestions.output.result.errorCount}"
-    },
-    "timeoutSeconds": 1800
+        "itemsProcessed": "${build_ai_plan.output.result.totalItems}",
+        "itemsAnalyzed": "${build_ai_plan.output.result.itemCount}",
+        "itemsSkipped": "${build_ai_plan.output.result.skippedCount}",
+        "suggestionsCreated": "${summarize_creations.output.result.createdCount}",
+        "aiErrors": "${build_all_suggestions.output.result.errorCount}",
+        "suggestionErrors": "${summarize_creations.output.result.errorCount}"
+    }
 }

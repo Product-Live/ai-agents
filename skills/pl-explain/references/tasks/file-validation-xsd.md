@@ -10,8 +10,10 @@ Status: GA | Category: file-validation | Documentation: https://learn.product-li
 
 ## When to use
 
-- After an XSLT that builds the `request` of another task (import items or schema, archive, Excel, FTP, SOAP, rules) and before that task: "This is the usual way to check a generated `request` file before feeding it to the task it targets."
-- To validate partner files on reception, with `failOnError: true` to stop the job on an invalid file.
+These skills omit development diagnostics of generated requests from final jobs. The task remains available when XML validation itself is an explicit business requirement of the brief.
+
+- During development, inspect the `request` built by an XSLT or script for another task (import items or schema, archive, Excel, FTP, SOAP, rules).
+- Validate partner XML against the expected schema when the brief requires it; `failOnError: true` makes the task fail on invalid XML.
 
 ## When not to use
 

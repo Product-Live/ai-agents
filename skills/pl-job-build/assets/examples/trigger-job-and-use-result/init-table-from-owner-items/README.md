@@ -10,7 +10,6 @@ Patterns shown:
 - passing values to the triggered job through `element.input` and reading its `outputParameters` back through `result.json[0].response.output.<key>`;
 - a `TEXTAREA` input parsed by a script that fails the job (`throw`) when empty;
 - `table-import-items` with `accountKey` on a shared table;
-- a job-level `timeoutSeconds` larger than the wait timeout.
 
 ## Prerequisites
 
@@ -73,4 +72,4 @@ flowchart TD
 
 - Same account instead of two: keep the structure and drop `accountKey` on `import_items`; the `apiKey` inputs can stay (an API key of that account, still in a protected variable) or be removed when the tasks may run with the job execution credentials (see the `data-job-find` and `data-job-execution-create` references).
 - Lookup instead of `data-job-find`: `data-job-execution-create` operations accept `lookups` (`{"taskName": "data-job-find", "assign": "element.jobId", "entityKey": "export-items-by-ean"}`) that resolve the job id in the same call; see the task reference.
-- Long exports: raise `waitOptions.timeoutSeconds` and the job-level `timeoutSeconds` together (the job timeout must stay larger).
+- Long exports: adjust `waitOptions.timeoutSeconds` within the documented wait budget and polling limits.

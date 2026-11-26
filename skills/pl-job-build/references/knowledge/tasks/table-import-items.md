@@ -135,5 +135,5 @@ To detect rejected items, parse the report with an XSLT (for example count `Log[
 ## Related tasks
 
 - `table-export-items` (same shape out, `file-hash` round trip), `table-export-schema` (keys, partitions, options)
-- `file-transformation-xslt` (producer), `file-conversion-csv-to-xml`, `file-conversion-xlsx-to-xml`, `file-conversion-json-to-xml` (sources), `file-validation-xsd`
+- `file-transformation-xslt` (producer), `file-conversion-csv-to-xml`, `file-conversion-xlsx-to-xml`, `file-conversion-json-to-xml` (sources), `file-validation-xsd` (development diagnostic)
 - `rules-engine-execute-rules` (`items` output), `data-item-create-or-update` (unitary JSON writes)

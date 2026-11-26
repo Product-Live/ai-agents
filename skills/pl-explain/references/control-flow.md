@@ -103,6 +103,7 @@ Expression rules for the `javascript` evaluator:
 - "Details regarding the tasks executed inside the SWITCH task are not visible in job execution details. We recommend the use of the outputParameters to display necessary information regarding what happened inside the SWITCH task." What a reference to a task of a branch that did not run resolves to is not documented: never rely on it.
 - Reference names inside branches must be unique job-wide (`display_message_yes`, `display_message_no`, `display_message_default`).
 - Guard pattern (used by the published AI jobs): a `SWITCH` whose matching case contains a `TERMINATE` and whose other branches are empty, so the main flow stays readable at the top level. "Only use the Decision as a test for the cases that you want to detect." "Do not over engineer your Jobs."
+- Design convention: combine compatible launch checks whose inputs are already available, such as launch origin and selection presence, in one initial `SWITCH` with the `javascript` evaluator. Keep distinct cases when messages or termination statuses differ, and preserve their priority. A check that depends on a later task's result stays after that task.
 - Branching on an optional task's status: `"status": "${protocol_http_perform.status}"` with a `COMPLETED_WITH_ERRORS` case (see `wiring.md`). Branching on the launch origin: `"case_value_param": "${workflow.input.context.jobActionOrigin}"` with `APP` and `PERIODIC` cases (see `job-context.md`).
 
 ## 2. DO_WHILE (the `loop` task, alpha)
@@ -271,7 +272,7 @@ Pauses the job. Provide exactly one of `duration` or `until`.
 | `duration` | Wait for a specific duration. Examples: `2 days 3 hours`, `1 hour 30 minutes`, `1 day 2 hours 30 minutes 10 seconds`, `2h30m`. Units in order days > hours > minutes > seconds; accepted spellings `days/day/d`, `hours/hour/hrs/hr/h`, `minutes/minute/mins/min/m`, `seconds/second/secs/sec/s`; case-insensitive; out-of-order units are invalid. |
 | `until` | Wait until a specific date: `yyyy-MM-dd HH:mm`, `yyyy-MM-dd HH:mm z` (for example `2025-12-25 09:00 CEST`) or `yyyy-MM-dd`. A date already in the past does not wait. |
 
-Setting both makes the task end in error. Setting neither makes the task wait indefinitely until the job is cancelled or hits its own `timeoutSeconds`. No output; global variables are not supported as inputs. Remember that a waiting job occupies its pipeline.
+Setting both makes the task end in error. Setting neither makes the task wait indefinitely. Supply exactly one of `duration` and `until`; there is no job-level `timeoutSeconds` property to bound this wait. No output; global variables are not supported as inputs. Remember that a waiting job occupies its pipeline.
 
 ## 6. DECISION (deprecated)
 

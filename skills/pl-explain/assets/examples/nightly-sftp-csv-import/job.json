@@ -204,6 +204,5 @@
         "import_report": "${import_items.output.report}",
         "file_moved": "${ftp_move.output.allFilesMoved}",
         "email_sent": "${send_report_email.output.allEmailsSent}"
-    },
-    "timeoutSeconds": 1800
+    }
 }

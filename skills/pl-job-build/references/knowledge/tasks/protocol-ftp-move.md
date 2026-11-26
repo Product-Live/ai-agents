@@ -87,7 +87,7 @@ Request grammar (`/Ftp-Move/File` 1..*; `Source-Path` and `Target-Path` are exac
 
 - Limits (shared with `protocol-ftp-get`): file size 250 Mb; 100 files in the same folder; one folder per file type.
 - Whether the target folder must already exist is not documented; create it on the server beforehand.
-- The request is usually built by `file-transformation-xslt` from the `listing` of `protocol-ftp-get` (`Files/File/Path`) so that only the files actually imported are moved. Validate it with `file-validation-xsd` and `xsdKey: protocol-ftp-move-input-request`.
+- The request is usually built by `file-transformation-xslt` from the `listing` of `protocol-ftp-get` (`Files/File/Path`) so that only the files actually imported are moved. During development, diagnose it with `file-validation-xsd` and `xsdKey: protocol-ftp-move-input-request`; remove the diagnostic task from the final job.
 - Branch on `allFilesMoved`; the task status alone does not say which files were moved.
 - SFTP ciphers supported: `aes256-cbc`, `aes192-cbc`, `aes128-cbc`, `aes128-gcm`, `aes256-gcm`, `blowfish-cbc`, `3des-cbc`, `cast128-cbc`, `arcfour`, `arcfour128`, `arcfour256`; a server offering none of them fails during the SSH handshake, "reported as a connection error rather than an authentication error".
 - Private key formats accepted: `BEGIN RSA PRIVATE KEY`, `BEGIN DSA PRIVATE KEY`, `BEGIN EC PRIVATE KEY`, `BEGIN OPENSSH PRIVATE KEY`, `PuTTY-User-Key-File-2` (ssh-rsa, ssh-dss), `BEGIN SSH2 PUBLIC KEY`.
@@ -98,5 +98,5 @@ Request grammar (`/Ftp-Move/File` 1..*; `Source-Path` and `Target-Path` are exac
 
 - `protocol-ftp-get` (fetch, process, then move)
 - `protocol-ftp-list`, `file-transformation-xslt` (build the request)
-- `file-validation-xsd` (check the request)
+- `file-validation-xsd` (development diagnostic for the request)
 - `protocol-ftp-delete` (alternative clean-up)

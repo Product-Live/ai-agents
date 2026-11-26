@@ -69,7 +69,7 @@ For an execution created on a partner account add `"apiKey": "${workflow.globalV
 - Limits: at most 100 ids; `pollingIntervalSeconds` at least 5; `timeoutSeconds` at most 86400 and at most 720 polls (`timeoutSeconds / pollingIntervalSeconds <= 720`).
 - A pipeline runs a single job at a time: the awaited job must run on a different pipeline than the waiting job, otherwise the wait lasts until timeout.
 - A job exposes files only through its `outputParameters` (or a `TERMINATE` task's `outputParameters`, which win); there is no implicit file listing in `output`.
-- Set the job-level `timeoutSeconds` of the waiting job with the wait budget in mind.
+- Set the wait budget with `inputParameters.timeoutSeconds`; it is not a job root or task envelope property.
 - Leave out any key that the input table does not list.
 
 ## Related tasks

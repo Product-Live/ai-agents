@@ -98,12 +98,12 @@ Outputs are available whenever the task completes its execution (status COMPLETE
 - "gzip compression only compresses a single file": several files with `gzip` produce `GZIP_COMPRESSION_IS_NOT_SUPPORTED_FOR_MULTIPLE_FILES` and no archive; assemble a `tar` first.
 - A duplicate `Path` inside one archive is skipped (`FILENAME_ALREADY_EXISTS`). An unreachable `Url` gives `URL_NOT_REACHABLE`: with `allowPartial: true` the archive is generated without that file, with `false` it is not generated.
 - Other report codes: `ARCHIVE_GENERATED` (info), `ARCHIVE_NOT_GENERATED` (always present when an archive is missing, next to the cause), `ARCHIVE_IS_EMPTY`, `INVALID_ARCHIVE_NAME`, `INVALID_COMPRESSION_METHOD`, `INVALID_COMPRESSION_LEVEL`, `EMPTY_TAG` (NORMAL level used), `GZIP_COMPRESSION_INVALID_PATH` (warnings), `INVALID_INPUT` (error, names the input).
-- Validate a generated request with `file-validation-xsd` and `xsdKey: file-generation-archive-input-request`.
+- During development, diagnose a generated request with `file-validation-xsd` and `xsdKey: file-generation-archive-input-request`; remove the diagnostic task from the final job.
 - Report inputs `skipReportGeneration` and `logLevel` apply.
 
 ## Related tasks
 
 - `file-conversion-unarchive` (reverse operation)
 - `file-transformation-xslt` (build the request, for example from the image URLs of a `table-export-items` file)
-- `file-validation-xsd` (check the request)
+- `file-validation-xsd` (development diagnostic for the request)
 - `protocol-ftp-post`, `notification-send-email` (deliver the archive)

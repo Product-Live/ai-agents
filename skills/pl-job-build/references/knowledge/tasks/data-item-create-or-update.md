@@ -35,7 +35,7 @@ Create or update items (rows) in a partition, field by field, through a list of 
 | request.json.operations[].lookups | ARRAY | no | - | - | Resolves business keys into ids for this operation (lookups reference, alpha). |
 | request.json.lookups | ARRAY | no | - | - | Same mechanism, declared once for the whole request. |
 | request.file | OBJECT | when method = ATTACHMENT | - | - | File holding the request body: a file object produced by an earlier task or a file://assets/ reference. |
-| failOnError | BOOLEAN | no | false (documented on data-job-execution-create only) | true, false | Fail the task when at least one operation is rejected; otherwise rejected operations are reported in the output with their error body. Documented only on data-job-execution-create; the job schema accepts it on every create task and several documentation examples use it. |
+| failOnError | BOOLEAN | no | false (documented on data-job-execution-create and data-suggestion-create) | true, false | Fail the task when at least one operation is rejected; otherwise rejected operations are reported in the output with their error body. Documented on data-job-execution-create and data-suggestion-create; the job schema accepts it on every create task and several documentation examples use it. |
 | outputs | ARRAY | no | [{"mediaType": "application/json", "outputMode": "INLINE", "outputKey": "json"}] | - | Output descriptors. |
 | outputs[].mediaType | STRING | yes, inside outputs | - | application/json, application/xml | Media type of the output. |
 | outputs[].outputMode | ENUM | yes, inside outputs | - | INLINE, ATTACHMENT | INLINE is only supported for application/json. |
@@ -163,7 +163,7 @@ The update variant is identical with `"object": "item_update"` and, for example,
 
 - Alpha task: a recent task, available on every account.
 - The XML request page shared by every create task states that the task performs a full replacement of the target entity and that omitted properties are reset to their default value. Where a task page says otherwise (for example data-project-patch), the task page wins.
-- `failOnError` is documented only on data-job-execution-create (default `false`); on this task it appears in examples or in the job schema without documentation. Treat it as probably supported, default `false`.
+- `failOnError` is documented on data-job-execution-create and data-suggestion-create (default `false`); on this task it appears in examples or in the job schema without documentation. Treat it as probably supported, default `false`.
 - The documentation writes `request.file` as the placeholder `"@my-request.xml"`; that syntax is never defined. In a real job pass a file object produced by an earlier task or a `file://assets/<name>.xml` asset.
 - `outputs[].outputKey` is documented as `json` or `xml`, but the shared output example uses free keys (`json_inline`, `xml_attachment`); the documentation shows both, prefer `json` and `xml`.
 - Leave out any key that the input table does not list.

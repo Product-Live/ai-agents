@@ -78,7 +78,7 @@ Inside the body, the loop's own inputs and outputs are read as `${<loopRef>.inpu
 - Write `loopCondition` in plain ES5 JavaScript, without arrow functions, `let`, `const` or template strings (convention of these skills). In the documented statement form, the last evaluated expression is the result.
 - Never put a `${...}` placeholder under `loopOver` (job creation fails). References to inner tasks from outside the loop go through `${<loopRef>.output.<n>.<innerRef>}`.
 - State across iterations goes through `set-variable` (write in the body, read with `${workflow.variables.x}`).
-- Sequential by design: N iterations take N times the task duration; mind the job `timeoutSeconds`.
+- Sequential by design: N iterations take N times the task duration; split long work or use a batch for independent iterations.
 
 ## Related tasks
 

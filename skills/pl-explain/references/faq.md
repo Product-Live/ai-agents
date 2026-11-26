@@ -26,7 +26,7 @@ The documentation ships ready-to-use generic jobs and use cases (export to Excel
 ## Job format
 
 **Is `schema` a number?**
-No: it is the string `"1.0"`. `optional` is a boolean, `timeoutSeconds` is a number, `userInputs` is an array, `outputParameters` is an object. See `job-format.md` section 2 and `pitfalls.md` T20.
+No: it is the string `"1.0"`. `optional` is a boolean, `userInputs` is an array, `outputParameters` is an object. See `job-format.md` section 2 and `pitfalls.md` T20.
 
 **Can I change the job key later?**
 No. "Job key can not be updated." Updates are uploaded on the same key; versions go in `CHANGELOG.md`. See `job-format.md` section 6.
@@ -114,7 +114,7 @@ Check that the rule is enabled, that the job has not been disabled or deleted, t
 ## Failures and errors
 
 **What do the execution statuses mean?**
-The job executions page lists `PENDING`, `RUNNING`, `COMPLETED`, `USER_ERROR` (invalid inputs or quotas), `FAILED` (technical), `TERMINATED` (stopped by a user) and `TIMEDOUT` (`timeoutSeconds` exceeded). The job chaining tasks also list `COMPLETED_WITH_ERRORS` and `REMOVED` among the terminal statuses and spell `TIMED_OUT`. See `lifecycle.md` section 7.
+The job executions page lists `PENDING`, `RUNNING`, `COMPLETED`, `USER_ERROR` (invalid inputs or quotas), `FAILED` (technical), `TERMINATED` (stopped by a user) and `TIMEDOUT` (execution time exceeded). The job chaining tasks also list `COMPLETED_WITH_ERRORS` and `REMOVED` among the terminal statuses and spell `TIMED_OUT`. See `lifecycle.md` section 7.
 
 **How do I continue after a failing task?**
 Set `optional: true` and test `${<ref>.status}` in a `SWITCH` with a `COMPLETED_WITH_ERRORS` case. Prefer the braced form (the unbraced form also appears in the documentation, but its evaluation is not described). See `wiring.md` section 6.
@@ -129,7 +129,7 @@ A screen present in the import replaces all its sections and columns, even in `I
 ISO 8601 dates (`2026-04-22`, `2026-04-22T10:00:00.000Z`) and numbers with a dot decimal separator, no thousands separator, unit in the `suffix` attribute. See `data-formats.md`.
 
 **The task completed but some files failed. How do I detect it?**
-Most file tasks complete even on partial failure: test `allFilesTransformed`, `allFilesGenerated`, `allFilesValid`, `allEmailsSent`, `noFile` with a `SWITCH`. See `wiring.md` section 4.
+Most file tasks can complete with partial failures. Read their documented flags (`allFilesTransformed`, `allFilesGenerated`, `allFilesValid`, `allEmailsSent`, `noFile`) and reports. Use a `SWITCH` when the required business outcome depends on a flag; an Excel export does not need a routine generation guard. See `wiring.md` section 4.
 
 ## Performance and limits
 
@@ -137,7 +137,7 @@ Most file tasks complete even on partial failure: test `allFilesTransformed`, `a
 No hard limit is documented; keep jobs at 20 tasks or fewer (convention of these skills) and chain jobs for longer flows. Other key numbers: 256 KB per local variable, 200 000 items per export, 500 KB per imported item, 1000 elements for inline data task outputs. See `limits.md`.
 
 **How long can a task run?**
-The job budget is `timeoutSeconds` (0 = none). Three task pages also document a duration of their own: 10 minutes for `code-execute-javascript`, 600 seconds per `ai-prompt-execute` task, 2 hours per batch and per slot for `task-batch-execute`; the job chaining tasks have a configurable wait budget (default 3600 seconds, maximum 86400). The other tasks publish no duration but can still end in `TIMED_OUT`, so split long work. See `limits.md` section 4.
+`timeoutSeconds` is not a job package property. Three task pages document a duration of their own: 10 minutes for `code-execute-javascript`, 600 seconds per `ai-prompt-execute` task, 2 hours per batch and per slot for `task-batch-execute`; the job chaining tasks have a configurable wait budget (default 3600 seconds, maximum 86400). The other tasks publish no duration but can still end in `TIMED_OUT`, so split long work. See `limits.md` section 4.
 
 **How do I make imports faster?**
 Differential imports only (never empty values), `INCREMENTAL` schema imports, `file-hash` / `file-key` on images, fewer formulas and conditional formatting, off-peak schedules, `outputMode: ATTACHMENT` for large data task results. See `limits.md` section 6 and `data-import-rules.md`.
@@ -148,7 +148,7 @@ Differential imports only (never empty values), `INCREMENTAL` schema imports, `f
 `ai-prompt-execute` (alpha) calls a language model provider with your own API key stored in a protected variable, usually inside a `task-batch-execute` for parallelism, and the job writes suggestions (`data-suggestion-create`) that people review: AI suggests, your team decides. See the task page and `limits.md` section 1 for sizing.
 
 **How do I size an AI batch?**
-Each AI task has a 600-second budget and each batch slot 2 hours; a batch holds roughly `7200 / average call duration` items per slot with 5 slots at most, minus a margin for orchestration overhead and retries. Measure a small run first, group several fields per prompt and run at night on a dedicated pipeline (scalability tutorial). See `limits.md`.
+The limits of `task-batch-execute` and `ai-prompt-execute` apply (scalability tutorial): up to 5 parallel slots, 2 hours per batch and per slot, 600 seconds per AI task including any attachment uploads, up to 2 retries for transient errors, and the rate limits of your provider (raising concurrency does not raise the provider limit). Size each slot at roughly `total / concurrency` sequential executions plus per-entry orchestration overhead, well within the 2 hours, and split very large lists into several batch executions (`task-batch-execute` page). Measure a small run first (`responseTimeMs` and the batch summary). See `limits.md`.
 
 ## Tooling
 

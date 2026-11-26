@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/Product-Live/ai-agents/job.schema.json",
   "title": "Data Factory job definition",
-  "description": "JSON Schema (draft-07) of a Data Factory job.json. Derived from the job schema shipped by the Product-Live VS Code extension (Copyright (c) 2023 Product-Live, MIT License): snippets removed, two alpha exchange tasks added, the seven documented user input types, timeoutSeconds and version added. The public documentation at https://learn.product-live.com/data-factory/ is the authority when the two disagree.",
+  "description": "JSON Schema (draft-07) of a Data Factory job.json. Derived from the job schema shipped by the Product-Live VS Code extension (Copyright (c) 2023 Product-Live, MIT License): snippets removed, two alpha exchange tasks added, the seven documented user input types and version added. The public documentation at https://learn.product-live.com/data-factory/ is the authority when the two disagree.",
   "$comment": "Derived from the job schema of the Product-Live VS Code extension, then corrected with what the public documentation states.",
   "type": "object",
   "properties": {
@@ -499,11 +499,6 @@
     "outputParameters": {
       "type": "object",
       "description": "User outputs: a map of labels to task outputs, typically \"${<taskReferenceName>.output.<name>}\" strings."
-    },
-    "timeoutSeconds": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "Timeout of the job in seconds. 0 (the default) applies no timeout."
     },
     "version": {
       "type": "string",
@@ -2994,7 +2989,381 @@
             ]
           },
           "then": {
-            "$ref": "#/definitions/dataOperationTask"
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "SUB_WORKFLOW"
+              },
+              "inputParameters": {
+                "type": "object",
+                "description": "The input parameters of the task",
+                "properties": {
+                  "apiKey": {
+                    "type": "string",
+                    "description": "Product-Live API key"
+                  },
+                  "request": {
+                    "type": "object",
+                    "description": "Request body containing the operations to perform.",
+                    "properties": {
+                      "contentType": {
+                        "type": "string",
+                        "description": "The content type of the operations payload. Either `application/json` or `application/xml`.",
+                        "enum": [
+                          "application/json",
+                          "application/xml"
+                        ]
+                      },
+                      "method": {
+                        "type": "string",
+                        "description": "The transport mode for the operations payload. INLINE: payload provided directly in `request.json`. ATTACHMENT: payload provided as a file reference in `request.file`.",
+                        "enum": [
+                          "INLINE",
+                          "ATTACHMENT"
+                        ]
+                      },
+                      "model": {
+                        "type": "string",
+                        "description": "The model/format used in the request. Today, only `default` is supported.",
+                        "const": "default"
+                      }
+                    },
+                    "required": [
+                      "contentType",
+                      "method"
+                    ],
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "method": {
+                              "const": "INLINE"
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "json": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "description": "The inline operations payload. Required when `method=INLINE`."
+                                },
+                                {
+                                  "type": "string",
+                                  "pattern": "^\\${[\\.\\w\\-]*}$"
+                                }
+                              ],
+                              "properties": {
+                                "operations": {
+                                  "anyOf": [
+                                    {
+                                      "type": "array",
+                                      "description": "Array of operations to perform. Each entry must contain a `key`, an `element` and optionally a `context`."
+                                    },
+                                    {
+                                      "type": "string",
+                                      "pattern": "^\\${[\\.\\w\\-]*}$"
+                                    }
+                                  ],
+                                  "items": {
+                                    "properties": {
+                                      "key": {
+                                        "type": "string",
+                                        "description": "A unique key identifying the operation in the batch. Used to correlate the operation with its result in the output."
+                                      },
+                                      "element": {
+                                        "type": "object",
+                                        "description": "The element to create, update, or delete. Structure varies by resource type (item, suggestion, comment-thread, project, variable, publication, etc.). Refer to the task documentation.",
+                                        "patternProperties": {
+                                          "^.+$": {
+                                            "type": [
+                                              "object",
+                                              "array",
+                                              "string",
+                                              "number",
+                                              "boolean"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "context": {
+                                        "type": "object",
+                                        "description": "Optional context for this specific operation. Used for PATCH/UPDATE/DELETE to identify the target (e.g. `{projectId: \"...\"}`, `{commentThreadId: \"...\"}`).",
+                                        "patternProperties": {
+                                          "^.+$": {
+                                            "type": [
+                                              "object",
+                                              "array",
+                                              "string",
+                                              "number",
+                                              "boolean"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "lookups": {
+                                        "type": "array",
+                                        "description": "Lookups resolved before the request is sent. Each entry runs a data find task to turn a business key into an id, and assigns the result to a path the rest of the request reuses.",
+                                        "items": {
+                                          "properties": {
+                                            "taskName": {
+                                              "type": "string",
+                                              "description": "The name of the data find task run by the lookup, for example `data-job-find`.",
+                                              "enum": [
+                                                "data-account-find",
+                                                "data-field-find",
+                                                "data-field-value-find",
+                                                "data-job-find",
+                                                "data-level-find",
+                                                "data-partition-find",
+                                                "data-screen-find",
+                                                "data-section-find",
+                                                "data-table-find",
+                                                "data-variable-find"
+                                              ]
+                                            },
+                                            "assign": {
+                                              "type": "string",
+                                              "description": "Dot-notation path the resolved id is assigned to, for example `element.jobId`."
+                                            },
+                                            "entityKey": {
+                                              "type": "string",
+                                              "description": "Key of a single entity to look up. Mutually exclusive with `entityKeys` and `criteria`."
+                                            },
+                                            "entityKeys": {
+                                              "type": "array",
+                                              "description": "Keys of several entities to look up, resolved into ids in the same order. Mutually exclusive with `entityKey` and `criteria`.",
+                                              "items": {
+                                                "type": "string",
+                                                "description": "Keys of several entities to look up, resolved into ids in the same order. Mutually exclusive with `entityKey` and `criteria`."
+                                              }
+                                            },
+                                            "criteria": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "description": "Criteria used to look up the entity. Mutually exclusive with `entityKey` and `entityKeys`."
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "pattern": "^\\${[\\.\\w\\-]*}$"
+                                                }
+                                              ],
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "description": "Criteria operator: eq, in, notIn, greater, greaterOrEqual, lower, lowerOrEqual, isNull, search, true, false, and, or",
+                                                  "enum": [
+                                                    "eq",
+                                                    "in",
+                                                    "notIn",
+                                                    "greater",
+                                                    "greaterOrEqual",
+                                                    "lower",
+                                                    "lowerOrEqual",
+                                                    "isNull",
+                                                    "search",
+                                                    "true",
+                                                    "false",
+                                                    "and",
+                                                    "or"
+                                                  ]
+                                                },
+                                                "field": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "description": "Field name or a field selector with target and key"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "description": "Field name or a field selector with target and key"
+                                                    }
+                                                  ]
+                                                },
+                                                "value": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "array",
+                                                      "description": "Value to compare against"
+                                                    },
+                                                    {
+                                                      "type": "boolean",
+                                                      "description": "Value to compare against"
+                                                    },
+                                                    {
+                                                      "type": "number",
+                                                      "description": "Value to compare against"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "description": "Value to compare against"
+                                                    }
+                                                  ]
+                                                },
+                                                "caseSensitive": {
+                                                  "type": "boolean",
+                                                  "description": "Case sensitive comparison. Default: false"
+                                                },
+                                                "queries": {
+                                                  "type": "array",
+                                                  "description": "Sub-queries for and/or combinators",
+                                                  "items": {
+                                                    "properties": {
+                                                      "type": {
+                                                        "type": "string",
+                                                        "description": "Criteria operator: eq, in, notIn, greater, greaterOrEqual, lower, lowerOrEqual, isNull, search, true, false, and, or",
+                                                        "enum": [
+                                                          "eq",
+                                                          "in",
+                                                          "notIn",
+                                                          "greater",
+                                                          "greaterOrEqual",
+                                                          "lower",
+                                                          "lowerOrEqual",
+                                                          "isNull",
+                                                          "search",
+                                                          "true",
+                                                          "false",
+                                                          "and",
+                                                          "or"
+                                                        ]
+                                                      },
+                                                      "field": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "object",
+                                                            "description": "Field name or a field selector with target and key"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "description": "Field name or a field selector with target and key"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "value": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "array",
+                                                            "description": "Value to compare against"
+                                                          },
+                                                          {
+                                                            "type": "boolean",
+                                                            "description": "Value to compare against"
+                                                          },
+                                                          {
+                                                            "type": "number",
+                                                            "description": "Value to compare against"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "description": "Value to compare against"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "caseSensitive": {
+                                                        "type": "boolean",
+                                                        "description": "Case sensitive comparison. Default: false"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "type"
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "required": [
+                                                "type"
+                                              ]
+                                            },
+                                            "extract": {
+                                              "type": "string",
+                                              "description": "Property extracted from the entity returned by the lookup. Default: id. Only applies when `criteria` is used."
+                                            },
+                                            "context": {
+                                              "type": "object",
+                                              "description": "Context passed to the lookup task, required when that task enforces a context, for example `{\"tableId\": \"...\"}`.",
+                                              "patternProperties": {
+                                                "^.+$": {
+                                                  "type": [
+                                                    "object",
+                                                    "array",
+                                                    "string",
+                                                    "number",
+                                                    "boolean"
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "required": [
+                                            "taskName",
+                                            "assign"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "key"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "operations"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "method": {
+                              "const": "ATTACHMENT"
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "file": {
+                              "type": "string",
+                              "description": "A file reference containing the operations payload. Required when `method=ATTACHMENT`. Typically `${task.output.result}` or `file://assets/X.json`.",
+                              "pattern": "^file:\\/{2}([\\wÀ-ÖØ-öø-ÿ.-\\\\\\/]*)|^\\$\\{[\\w-]+(?:\\[\\d+\\])*(?:\\.[\\w-]+(?:\\[\\d+\\])*)*\\}$"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "outputs": {
+                    "type": "array"
+                  },
+                  "failOnError": {
+                    "type": "boolean",
+                    "description": "Default: false. Every operation is attempted. If true, the task then fails when at least one request was refused (status 400 or more)."
+                  },
+                  "logLevel": {
+                    "type": "string",
+                    "description": "Defines the log level recorded in the report. error < warning < info < debug. Default: info.",
+                    "enum": [
+                      "error",
+                      "warning",
+                      "info",
+                      "debug"
+                    ]
+                  }
+                },
+                "required": [
+                  "request"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "inputParameters"
+            ]
           }
         },
         {
@@ -3232,7 +3601,7 @@
                   },
                   "apiKey": {
                     "type": "string",
-                    "description": "The provider API key, without a Bearer prefix. Store it in a protected variable and pass its reference, for example ${workflow.globalVariables.<key>}.",
+                    "description": "The provider API key. Store it in a protected variable and pass its reference, for example ${workflow.globalVariables.<key>}.",
                     "minLength": 1
                   },
                   "prompt": {
@@ -4254,20 +4623,6 @@
                     "type": "string",
                     "description": "The file name that will be generated. Must contain the extension of the file.",
                     "minLength": 1
-                  },
-                  "skipReportGeneration": {
-                    "type": "boolean",
-                    "description": "When set to true, the report generation is skipped. Default: false."
-                  },
-                  "logLevel": {
-                    "type": "string",
-                    "description": "Defines the log level recorded in the report. error < warning < info < debug. Default: info.",
-                    "enum": [
-                      "error",
-                      "warning",
-                      "info",
-                      "debug"
-                    ]
                   }
                 },
                 "required": [
@@ -6919,16 +7274,6 @@
                 "type": "object",
                 "description": "The input parameters of the task",
                 "properties": {
-                  "logLevel": {
-                    "type": "string",
-                    "description": "Defines the log level recorded in the report. error < warning < info < debug. Default: info.",
-                    "enum": [
-                      "error",
-                      "warning",
-                      "info",
-                      "debug"
-                    ]
-                  },
                   "mode": {
                     "type": "string",
                     "description": "FILE : only one file will be transformed, FILES : the transformation will be applied to all input files.",
@@ -6975,10 +7320,6 @@
                       "FILE",
                       "STRING"
                     ]
-                  },
-                  "skipReportGeneration": {
-                    "type": "boolean",
-                    "description": "When set to true, the report generation is skipped. Default: false."
                   }
                 },
                 "required": [

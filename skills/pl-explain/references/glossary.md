@@ -30,7 +30,7 @@ Data-model terms (tables, items, fields) come first, then exchange and collabora
 | Screen field | The front-end object behind a column (key, title, data type, status) that `FIELD` user inputs list and filter. |
 | Conditional formatting | A computed status per item (8 fields per table per the limits page, 5 per the task page body; 10 statuses each) driven by rules such as required, length, regex, barcode, image size, numeric and inter-field comparisons; displayed as a colored column. |
 | Formula | A rule set that fills a field or an identifier automatically (or limits the selectable options) from other values of the same item; the same engine as the rules engine, run synchronously; up to 2 000 rules per formula field. |
-| Metadata | Free key / value pairs (each key unique within its element) attached to schema elements, used for example to flag fields for AI jobs (`ai-agent-check-typo`). |
+| Metadata | Free key / value pairs (each key unique within its element) attached to schema elements, used for example to flag fields for AI jobs (`ai-typo-check`). |
 | Archiving | The only way to retire identifiers, classifications, categories, options, matrix links and screens ("you cannot delete data on the schema of a table, you can only archive some elements"): archived values stay visible to users and come back when the element is reactivated. |
 | Differential import | Importing only the items and values that changed since the last import, never empty values; the recommended way to keep imports fast. |
 
@@ -64,7 +64,7 @@ Data-model terms (tables, items, fields) come first, then exchange and collabora
 | -- | -- |
 | Data Factory | The orchestration platform of Product-Live that runs jobs made of tasks, with built-in monitoring and error alerting. |
 | Job | The main execution unit: a repeatable, auditable process that orchestrates tasks; packaged as a ZIP defined by `job.json`; shown as an "Action" in the app. |
-| Job definition | The content of `job.json`: metadata, user inputs, tasks, user outputs, timeout. |
+| Job definition | The content of `job.json`: metadata, user inputs, tasks and user outputs. |
 | Package | The ZIP (`<key>.job.zip`) containing `job.json`, `assets/`, `README.md`, `CHANGELOG.md`, filtered by `.jobignore`. |
 | Asset | A file shipped in the package's `assets/` folder and referenced as `file://assets/<path>`; resolved into a file object at upload. |
 | Task | A unit of work executed by the platform (export items, transform a file, send an email); identified by its catalog `name`. |
@@ -128,5 +128,5 @@ Data-model terms (tables, items, fields) come first, then exchange and collabora
 | Guard | A `SWITCH` whose matching branch holds a `TERMINATE`, used to stop early on invalid inputs or empty selections. |
 | Idempotent job | A job that can be re-run without side effects (no duplicates, no double sends); recommended for periodic jobs (recommendation of these skills). |
 | Seed XML | A tiny static XML (`file://assets/empty.xml`) used as the input of an XSLT whose real data comes from `params`. |
-| Request document | The XML (or JSON) document that configures a task (`Items-Request`, `Generate-Excel`, `Zips`, `Xslt`, `Table`), usually built by an XSLT and validated with an `xsdKey`. |
+| Request document | The XML (or JSON) document that configures a task (`Items-Request`, `Generate-Excel`, `Zips`, `Xslt`, `Table`), built by a script or an XSLT. A published `xsdKey` can help diagnose XML requests during development. |
 | Wrong vs right pair | The presentation used in `pitfalls.md` for shapes that are not part of the job format and their correct form. |

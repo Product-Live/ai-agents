@@ -78,7 +78,7 @@ Compatibility rules:
 - Tasks with a `mode` property take `FILE` with a `file` input and `FILES` with a `files` input. "You can view the mode = FILES as a loop that will do the same Task whatever input files they are."
 - To feed a `FILES` output into a `FILE` input, use a task that merges or archives the files, pick one with `[0]`, or switch the consumer to its `FILES` mode.
 - An `ENUM` output is not a boolean: compare it with string case keys (`"YES"`, `"NO"`).
-- Most file tasks end `COMPLETED` even when some files failed; test the `YES`/`NO` flag outputs instead of the task status.
+- File tasks can end `COMPLETED` with partial output. Their `YES`/`NO` flags and reports describe that outcome; add a `SWITCH` when a business condition needs it. An Excel export passes outputs directly without a routine generation guard.
 
 ## 5. File objects and `file://assets/...`
 
@@ -143,7 +143,7 @@ To react to the failure of a task without stopping the job, mark it `optional: t
 }
 ```
 
-The handling-failures page writes the reference as the bare `"protocol_http_perform.status"`; prefer the braced form `"${protocol_http_perform.status}"`, which is the form of every other documented task reference. How the bare form is evaluated is not documented, so always keep a `defaultCase`. Values: `COMPLETED_WITH_ERRORS` for an optional task that failed (documented); `COMPLETED` for a successful task is inferred from the job execution statuses, not shown for `${ref.status}` in the documentation, so prefer a `COMPLETED_WITH_ERRORS` case plus `defaultCase` over a `COMPLETED` case. The documentation marks a task `optional` so that the job continues after its failure; do not rely on a `FAILED` case.
+The handling-failures page writes the reference as the bare `"protocol_http_perform.status"`; prefer the braced form `"${protocol_http_perform.status}"`, which is the form of every other documented task reference. How the bare form is evaluated is not documented, so always keep a `defaultCase`. Values: `COMPLETED_WITH_ERRORS` for an optional task that failed (documented); `COMPLETED` for a successful task is inferred from the job execution statuses, not shown for `${ref.status}` in the documentation, so prefer a `COMPLETED_WITH_ERRORS` case plus `defaultCase` over a `COMPLETED` case. The documentation marks a task `optional` so that the job continues after its failure; do not rely on a `FAILED` case. The braced form ran on a stage job on 2026-11-24, inside a loop and inside a SWITCH branch. Some versions of the VS Code extension wrongly report it as an invalid path: keep it, and do not replace it with a guess from the outputs of the failed task (what those outputs resolve to after a failure is not documented).
 
 ## 7. User outputs (`outputParameters`)
 
@@ -167,7 +167,7 @@ The handling-failures page writes the reference as the bare `"protocol_http_perf
 
 ## 8. Report inputs and outputs
 
-Most catalog tasks accept two optional report inputs and produce a `report` output:
+Most catalog tasks accept two optional report inputs and produce a `report` output. Check the task reference before using them: `file-transformation-xslt` and `table-export-schema` support neither these inputs nor the `report` output.
 
 | Property | Type | Default | Description |
 | -- | -- | -- | -- |

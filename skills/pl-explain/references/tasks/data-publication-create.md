@@ -33,7 +33,7 @@ Create publications. A publication is a set of field values sent to a partner on
 | request.json.operations[].lookups | ARRAY | no | - | - | Resolves business keys into ids for this operation (lookups reference, alpha); assign must start with element., options. or context. |
 | request.json.lookups | ARRAY | no | - | - | Same mechanism, declared once for the whole request. |
 | request.file | OBJECT | when method = ATTACHMENT | - | - | File holding the request body: a file object produced by an earlier task or a file://assets/ reference. |
-| failOnError | BOOLEAN | no | false (documented on data-job-execution-create only) | true, false | Fail the task when at least one operation is rejected; otherwise rejected operations are reported in the output with their error body. Undocumented on this task; accepted by the job schema and used in several documentation examples of this family. |
+| failOnError | BOOLEAN | no | false (documented on data-job-execution-create and data-suggestion-create) | true, false | Fail the task when at least one operation is rejected; otherwise rejected operations are reported in the output with their error body. Undocumented on this task; accepted by the job schema and used in several documentation examples of this family. |
 | outputs | ARRAY | no | [{"mediaType": "application/json", "outputMode": "INLINE", "outputKey": "json"}] | - | Output descriptors. |
 | outputs[].mediaType | STRING | yes, inside outputs | - | application/json, application/xml | Media type of the output. |
 | outputs[].outputMode | ENUM | yes, inside outputs | - | INLINE, ATTACHMENT | INLINE is only supported for application/json. |
@@ -120,7 +120,7 @@ With `request.method = "ATTACHMENT"` and `request.contentType = "application/xml
 - INLINE output is limited to 1000 elements; beyond that the task ends with an error. Use `options.limit`, or declare an ATTACHMENT output (`outputs: [{"mediaType": "application/xml", "outputMode": "ATTACHMENT", "outputKey": "xml"}]`) for large result sets.
 - Dynamic ids come from earlier tasks: `"fromItemId": "${create_item.output.result.json[0].response.id}"` (create result, with `.response`), `"screenId": "${find_screen.output.result.json[0].id}"` (find result, without), `"toAccountId": "${workflow.input.partnerAccountId}"`. The documented dynamic example adds `"failOnError": true`.
 - No `context` is needed; the examples omit it.
-- `failOnError` is documented only on data-job-execution-create (default `false`): operations run one by one and a rejected operation does not stop the others unless `failOnError` is `true`.
+- `failOnError` is documented on data-job-execution-create and data-suggestion-create (default `false`): operations run one by one and a rejected operation does not stop the others unless `failOnError` is `true`.
 - The XML request text shared by every write task states that the task performs a full replacement of the target entity and that omitted properties are reset to their default value; it is pulled into this page too.
 - The documentation writes `request.file` as the placeholder `"@my-request.xml"`; that syntax is never defined. In a real job pass a file object produced by an earlier task or a `file://assets/<name>.xml` asset.
 - `outputs[].outputKey` is documented as `json` or `xml`, but the shared output example uses free keys (`json_inline`, `xml_attachment`); the documentation shows both, prefer `json` and `xml`.

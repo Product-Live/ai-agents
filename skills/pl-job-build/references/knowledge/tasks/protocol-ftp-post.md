@@ -95,16 +95,16 @@ Request grammar (`/Ftp-Post/File` 1..*; `File/Url` is "Usually the url generated
 - "Test `allFilesSent` rather than the task status to know whether the transfer was complete - this holds for all three modes."
 - In `FILE` and `FILES` modes the remote name is the source file name: name the file upstream (`fileName` of the XSLT task) or use `REQUEST` mode with the `Url` values of a previous `listing`.
 - Whether `remoteFolder` or the folders of `Path` must pre-exist is not documented; create them on the server beforehand.
-- Validate a generated request with `file-validation-xsd` and `xsdKey: protocol-ftp-post-input-request`.
+- During development, diagnose a generated request with `file-validation-xsd` and `xsdKey: protocol-ftp-post-input-request`; remove the diagnostic task from the final job.
 - SFTP ciphers supported: `aes256-cbc`, `aes192-cbc`, `aes128-cbc`, `aes128-gcm`, `aes256-gcm`, `blowfish-cbc`, `3des-cbc`, `cast128-cbc`, `arcfour`, `arcfour128`, `arcfour256`; a server offering none of them fails during the SSH handshake, "reported as a connection error rather than an authentication error".
 - Private key formats accepted: `BEGIN RSA PRIVATE KEY`, `BEGIN DSA PRIVATE KEY`, `BEGIN EC PRIVATE KEY`, `BEGIN OPENSSH PRIVATE KEY`, `PuTTY-User-Key-File-2` (ssh-rsa, ssh-dss), `BEGIN SSH2 PUBLIC KEY`.
-- Never inline credentials: `host`, `username`, `password` and `privateKey` belong in global variables (secret flag for the password and the key) and are documented in the job README. Set `timeoutSeconds` on the job for large uploads.
+- Never inline credentials: `host`, `username`, `password` and `privateKey` belong in global variables (secret flag for the password and the key) and are documented in the job README. No timeout input is documented for this task.
 - Report inputs `skipReportGeneration` and `logLevel` apply.
 
 ## Related tasks
 
 - `file-transformation-xslt` (produce the export, build the request)
 - `file-generation-archive`, `file-generation-xlsx`, `file-generation-pdf` (files to send, through their `listing`)
-- `file-validation-xsd` (check the request)
+- `file-validation-xsd` (development diagnostic for the request)
 - `table-export-items` (data source)
 - `protocol-ftp-get` (inbound counterpart)

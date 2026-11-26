@@ -11,7 +11,7 @@ When two documents disagree, both values are given and the safer one is recommen
 | Limit | Value | Recommendation |
 | -- | -- | -- |
 | Tasks within a job | no hard limit documented | convention of these skills: 20 at most; split larger flows and chain jobs |
-| Job timeout | `timeoutSeconds` in `job.json`; `0` = none; status `TIMEDOUT` when exceeded | set it for jobs that call external systems |
+| Job timeout configuration | no `timeoutSeconds` property in the job package | use only timeout inputs documented by the task |
 | User input file (`FILE`) | 2 GB per file; upload window 1 minute | use FTP or HTTP sources for large files |
 | Task input payload | not documented (a September 2026 release note says that `data-item-find` now logs a readable message when a payload limit is exceeded, without giving the value) | pass files between tasks; never inline item lists or large documents |
 | Local variable (`SET_VARIABLE`) | 256 KB per variable | keep references, not data |
@@ -25,7 +25,7 @@ When two documents disagree, both values are given and the safer one is recommen
 | Decision | 10 conditions | prefer `SWITCH` |
 | Switch | tasks inside branches are not visible in execution details | expose results through `outputParameters` |
 | Batch (`task-batch-execute`) | concurrency 1 to 5; 7200 seconds per batch and per slot; `table-import-schema` and `table-refresh-items` excluded | |
-| AI task (`ai-prompt-execute`) | 600 seconds per task including attachment uploads; transient errors are retried; provider rate limits apply | size a batch at roughly `7200 / average call duration` items per slot, minus a margin for orchestration overhead and retries (scalability tutorial) |
+| AI task (`ai-prompt-execute`) | 600 seconds per task including attachment uploads; 150 seconds without a response per provider call; the generating call is retried up to twice on HTTP 408, 429, 500, 502, 503, 504 and 529; provider rate limits apply | in a batch, size each slot at roughly `total / concurrency` sequential executions plus orchestration overhead, well within 7200 seconds (`task-batch-execute` page) |
 | Suggestion creation | 100 suggestions per minute | |
 
 ## 2. Data model limits (tables and items)
@@ -103,11 +103,11 @@ When two documents disagree, both values are given and the safer one is recommen
 | -- | -- |
 | `code-execute-javascript` | 10 minutes for the whole task (`TIMED_OUT` beyond); no network, no modules, `eval()` forbidden; the task page recommends `expressionFile` over an inline `expression` for complex scripts |
 | `SWITCH` javascript expression, `loopCondition` | no duration is documented; keep them to a comparison or a ternary and write ES5 syntax (repository recommendations) |
-| `json-transform-jq` | no documented duration (bound the job with `timeoutSeconds`); no date functions; no global variables as inputs |
+| `json-transform-jq` | time limit not documented. Date functions and global variables as inputs are unsupported. |
 
 ## 4. Documented task durations
 
-Three task pages publish a fixed duration, and two publish a configurable wait budget. Each applies to the task itself, whatever the job's `timeoutSeconds`.
+Three task pages publish a fixed duration, and two publish a configurable wait budget. Each applies to the task itself; it does not define a job package timeout.
 
 | Task | Documented duration |
 | -- | -- |
@@ -116,7 +116,7 @@ Three task pages publish a fixed duration, and two publish a configurable wait b
 | `task-batch-execute` | 7200 seconds (2 hours) for the whole batch and for each parallel slot |
 | `data-job-execution-await`, `data-job-execution-create` (`wait: true`) | wait budget `timeoutSeconds` (`waitOptions.timeoutSeconds` on the create task): default 3600, maximum 86400, at most 720 polls (`timeoutSeconds / pollingIntervalSeconds`); the task fails when it is exceeded |
 
-No other task page states a duration, yet a task can still end in `TIMED_OUT` on its own: the `azure-storage-blob-list` page says that a very large container "is bounded by the task execution time". Split long work into smaller runs, keep files small, and set `timeoutSeconds` on jobs that call external systems.
+No other task page states a duration, yet a task can still end in `TIMED_OUT` on its own: the `azure-storage-blob-list` page says that a very large container "is bounded by the task execution time". Split long work into smaller runs and keep files small. Configure a timeout only when the task documents such an input.
 
 ## 5. Public API rate limits
 
@@ -131,7 +131,7 @@ The `task-batch-execute` page says that "any rate limit of the executed task sti
 ## 6. Sizing rules of thumb
 
 - "100k Items with 150 properties is usually a 100 MB file."
-- An AI batch holds roughly `7200 / average call duration` items per slot, minus a margin for orchestration overhead and retries; "with 4 seconds per call and 5 slots, size a run at about 7,200 items" (a working assumption of the scalability tutorial); measure a representative first run (`responseTimeMs` and the batch summary) before sizing the full run.
+- An AI batch: each slot runs roughly `total / concurrency` sequential executions plus per-entry orchestration overhead and must fit within 7200 seconds (`task-batch-execute` page); measure a representative first run (`responseTimeMs` and the batch summary) before sizing the full run (recommendation).
 - Jobs slow down with data volume, large media, peak hours and complex rules; large ZIP image exports can time out: use smaller selections.
 - Recommendation (convention of these skills): keep intermediate data in files and inline JSON in `inputParameters` small.
 
@@ -143,5 +143,5 @@ The `task-batch-execute` page says that "any rate limit of the executed task sti
 | `outputMode: INLINE` on a find task that returns more than 1000 elements | `ATTACHMENT`, or `limit` |
 | `concurrency: 10` on a batch | 1 to 5 |
 | A `WAIT` of several days on a shared pipeline | a scheduled second job, or a dedicated pipeline |
-| Relying on `table-export-items` finishing within `timeoutSeconds` for 500 000 items | 200 000 items per export; split by partition or filter |
+| Exporting 500 000 items in one `table-export-items` task | 200 000 items per export; split by partition or filter |
 | 60 emails from one `notification-send-email` | 50 per execution; split or batch |

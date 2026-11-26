@@ -33,7 +33,7 @@ const DEFAULT_CATALOG = path.join(__dirname, 'tasks-catalog.json');
 
 // The job format is closed: any other root key is reported as E-UNKNOWN-ROOT,
 // with the list of these allowed keys.
-const ROOT_KEYS = ['schema', 'key', 'title', 'icon', 'titleLocal', 'description', 'descriptionLocal', 'userInputs', 'tasks', 'outputParameters', 'timeoutSeconds', 'version'];
+const ROOT_KEYS = ['schema', 'key', 'title', 'icon', 'titleLocal', 'description', 'descriptionLocal', 'userInputs', 'tasks', 'outputParameters', 'version'];
 const ROOT_REQUIRED = ['schema', 'key', 'title', 'tasks'];
 const TASK_KEYS = ['name', 'taskReferenceName', 'description', 'optional', 'type', 'inputParameters', 'evaluatorType', 'expression', 'decisionCases', 'defaultCase', 'caseValueParam', 'loopCondition', 'loopOver'];
 const TERMINATE_INPUTS = ['terminationStatus', 'outputParameters', 'skipReportGeneration', 'logLevel'];
@@ -48,6 +48,10 @@ const EXPRESSION = /\$\{([\w-]+)((?:\[\d+\])*(?:\.[\w-]+(?:\[\d+\])*)*)\}/g;
 const WHOLE_REFERENCE = /^\$\{[\w-]+(?:\[\d+\])*(?:\.[\w-]+(?:\[\d+\])*)*\}$/;
 const NO_GLOBAL_VARIABLE = { DO_WHILE: 'loop', SET_VARIABLE: 'set-variable', WAIT: 'wait' };
 const TOP_LEVEL_LIMIT = 20; // convention of these skills, not a platform limit
+// Descriptions are read by end users; details go to the README (convention of these skills).
+const DESCRIPTION_LIMITS = { job: 400, task: 160 };
+// The task pages state that these tasks provide no report output.
+const NO_REPORT_OUTPUT = new Set(['file-transformation-xslt', 'table-export-schema']);
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -359,7 +363,7 @@ function taskStrings(task, at) {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_IGNORE = ['*.job.zip', '.jobignore'];
-const ALWAYS_IGNORE = ['node_modules/', '.git/', '*.run.json', '*.df-test.json', '*.test.js', 'TESTS/', '__tests__/', '__fixtures__/'];
+const ALWAYS_IGNORE = ['node_modules/', '.git/', '.product-live-downloads/', '*.run.json', '*.df-test.json', '*.test.js', 'TESTS/', '__tests__/', '__fixtures__/'];
 
 function compileIgnore(lines) {
   const rules = [];
@@ -430,6 +434,9 @@ function lintRoot(ctx) {
     } else if (key === 'version' && typeof job.version !== 'string') {
       report.error('E-ROOT-FORBIDDEN', 'version', '"version" must be a string, got ' + describeValue(job.version), 'write a free-text string such as "1.0.0", or remove it; document the changes in CHANGELOG.md');
     }
+  }
+  if (typeof job.description === 'string' && job.description.length > DESCRIPTION_LIMITS.job) {
+    report.warn('W-LONG-DESCRIPTION', 'description', 'the job description has ' + job.description.length + ' characters (more than ' + DESCRIPTION_LIMITS.job + ')', 'say in one or two short sentences what the job does for the user; move the technical details to README.md');
   }
   if ('outputParameters' in job) {
     if (!isObject(job.outputParameters)) {
@@ -503,10 +510,9 @@ function lintUserInputs(ctx) {
 }
 
 function lintTasks(ctx) {
-  const { report, nodes, catalog, job } = ctx;
+  const { report, nodes, catalog } = ctx;
   const customTasks = [];
   const nameOfTasks = new Set();
-  let needsTimeout = false;
 
   for (const node of nodes) {
     const task = node.task;
@@ -523,7 +529,10 @@ function lintTasks(ctx) {
       if (TASK_KEYS.includes(key)) continue;
       report.error('E-TASK-FORBIDDEN', joinPath(at, key), 'task property "' + key + '" is not part of the documented task format', 'remove it, or move it under inputParameters when the task reference documents it; allowed: ' + TASK_KEYS.join(', '));
     }
-    if (!('description' in task)) report.warn('W-MISSING-DESCRIPTION', at, 'task has no "description"', 'describe what the task does in this job');
+    if (!('description' in task)) report.warn('W-MISSING-DESCRIPTION', at, 'task has no "description"', 'say in one short sentence what the step does for the user');
+    else if (typeof task.description === 'string' && task.description.length > DESCRIPTION_LIMITS.task) {
+      report.warn('W-LONG-DESCRIPTION', joinPath(at, 'description'), 'the task description has ' + task.description.length + ' characters (more than ' + DESCRIPTION_LIMITS.task + ')', 'say in one short sentence what the step does for the user; move the reasons and technical details to the README implementation notes');
+    }
     if (!('optional' in task)) report.warn('W-MISSING-OPTIONAL', at, 'task has no "optional" property (the documentation lists it as required)', 'add "optional": false (stop on error) or true (continue)');
 
     const type = task.type;
@@ -557,8 +566,6 @@ function lintTasks(ctx) {
     }
     if (entry) {
       if (entry.status === 'deprecated') report.warn('W-DEPRECATED', joinPath(at, 'name'), '"' + entry.name + '" is deprecated', entry.replacedBy ? 'use "' + entry.replacedBy + '"' : 'see the documentation');
-      if (entry.name.startsWith('protocol-') || entry.name === 'data-job-execution-await') needsTimeout = true;
-      if (entry.name === 'data-job-execution-create' && isObject(task.inputParameters) && task.inputParameters.wait === true) needsTimeout = true;
       if (type === 'SUB_WORKFLOW' && isObject(task.inputParameters)) lintCatalogInputs(ctx, node, entry);
     }
     if (typeof name === 'string') nameOfTasks.add(name);
@@ -573,9 +580,6 @@ function lintTasks(ctx) {
         }
       }
     }
-  }
-  if (needsTimeout && !(typeof job.timeoutSeconds === 'number' && job.timeoutSeconds > 0)) {
-    report.warn('W-NO-TIMEOUT', 'timeoutSeconds', 'the job calls external systems (FTP, HTTP, SOAP) or waits on another job but has no job timeout', 'add "timeoutSeconds": <seconds> at the root (0 = no timeout)');
   }
 }
 
@@ -602,6 +606,12 @@ function lintCatalogInputs(ctx, node, entry) {
   const { report } = ctx;
   const params = node.task.inputParameters;
   const at = joinPath(node.path, 'inputParameters');
+  if (entry.name === 'data-item-find' && params.findMode === 'USER_SELECTION' && isObject(params.request) && params.request.json !== undefined) {
+    report.warn('W-IGNORED-SELECTION-REQUEST', joinPath(at, 'request.json'), 'USER_SELECTION builds its request from the launch context and ignores request.json, including its options', 'use REQUEST with the launch partition, screen level and query to apply includedFieldKeys or limit');
+  }
+  if (entry.name === 'ai-prompt-execute' && params.provider === 'openai' && params.responseFormat === 'json_object' && Array.isArray(params.tools) && params.tools.some((tool) => isObject(tool) && tool.type === 'web-search')) {
+    report.warn('W-AI-WEB-JSON-COMPATIBILITY', joinPath(at, 'responseFormat'), 'OpenAI may reject web-search combined with responseFormat "json_object"; model compatibility is not checked by this validator', 'omit responseFormat, request JSON in the prompt and parse the response; see the ai-prompt-execute reference');
+  }
   const known = new Map(entry.inputs.map((input) => [input.name, input]));
   for (const input of entry.inputs) {
     if (input.required && !(input.name in params)) {
@@ -768,6 +778,11 @@ function lintExpressions(ctx) {
     if (kind === 'input') {
       report.warn('W-REF-INPUT', s.path, expr + ': reading the inputs of another task is only documented for loops (${<loopRef>.input.<key>})', 'reference the original value instead');
       return;
+    }
+    if (kind === 'output' && segments[1] === 'report' && target.task.type === 'SUB_WORKFLOW' && NO_REPORT_OUTPUT.has(target.task.name)) {
+      report.error('E-NO-REPORT-OUTPUT', s.path, expr + ': "' + target.task.name + '" provides no report output', target.task.name === 'file-transformation-xslt'
+        ? 'test allFilesTransformed and give the user an explicit message instead'
+        : 'use the task status and the file output instead');
     }
     if (!s.node) return;
     if (target.order === s.node.order) {

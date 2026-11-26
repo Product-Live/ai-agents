@@ -116,6 +116,7 @@ Rules:
 - Prefer these modes over reading `context.selection.ids` or `context.query` by hand: they handle every selection format.
 - A job that consumes the selection must be made visible only on the relevant tables (visibility "Visible for selected tables") and its README must say that rows must be selected before launching.
 - With `data-item-find`, the selection is read on the level of the screen the job was launched from ("a screen belongs to exactly one level"); the `table-export-items` page only says that the items selected by the user are exported.
+- USER_SELECTION in data-item-find ignores request.json.options, including includedFieldKeys and limit. To restrict fields or cap items, use REQUEST with the launch partition, the screen level and context.query. Guard against a missing query and an empty computed whitelist; see tasks/data-item-find.md.
 - Jobs that do not consume the selection must not depend on `context.selection` being present.
 
 The AI generic jobs read `context.view.table.id` and `context.view.screen.id` instead of asking for a table key: "the table and the screen come from where the job is launched, and the items come from the grid selection". They fail explicitly (switch and terminate) when launched outside a table.

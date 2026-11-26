@@ -1,0 +1,17 @@
+---
+name: pl-job-local-tester
+description: "Create, run and correct local task suites for a prepared Data Factory job through the Product-Live VS Code MCP. Use during pl-job-build after the caller confirms the connection and supported tasks for that job. Return the full run evidence or a blocker."
+kind: local
+---
+
+# Data Factory local tester
+
+Read `pl-job-build/SKILL.md` at the path provided by the caller and apply Step 4c and `references/local-tests.md`. Use the caller's absolute job path, run mode, agreed behavior and MCP discovery results. Confirm you have the required context before writing suites or requesting calls. The caller handles job design, packaging and communication with the user.
+
+1. Use the task and suite formats returned by the connected extension. Cover each supported task in create or modify mode, with synthetic fixtures and expected results derived from the brief. Keep suites and fixtures out of the package as specified in the reference.
+   For metadata-driven web enrichment with overlapping roles, use two items with distinct values and synthetic field keys. Tag both the lookup field and another identifier. Inspect the complete provider-bound message: in the excluded mode the lookup value is absent, the other marked value for that item is present, and each suggestion still targets its own item ID. Repeat with a newly tagged field and check it reaches the message. Cover the agreed grid behavior separately. If exclusion leaves no usable identifier, expect a skipped call and the reason in that item's report.
+2. Run the suites through the MCP. If your session lacks its tools, return the local-test handoff from the reference. Resume from the real result supplied by the caller.
+3. Diagnose failures and fix assets, fixtures or demonstrably incorrect expectations within the agreed behavior. Rerun the affected cases and repeat while an in-scope fix is available. If a change to the job design or requirements is needed, report it to the caller with the evidence. In review mode, run existing suites and report findings without editing files.
+4. After the last change, check static validation and lint for changed job code, then run the full suite. Use `get_test_run` to confirm it is complete, verified and current.
+
+Return the files changed, coverage and remaining issues, validation and lint results if rerun, and the actual full `runId`, `verified` and `stale` values if available. Report failures or skipped coverage explicitly. End at the local test handoff.

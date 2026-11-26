@@ -86,7 +86,7 @@ Troubleshooting a job that did not run (FAQ): check that the rule is enabled, th
 | `USER_ERROR` | Errors related to user-controlled data or configuration: invalid or missing user inputs, business or quota violations (for example exceeding a limit when creating items). |
 | `FAILED` | Technical issues: invalid job definition, infrastructure problems, unexpected platform errors, or a `TERMINATE` with `FAILED`. Contact support when the cause is not in the job. |
 | `TERMINATED` | Explicitly stopped by a user before completion. |
-| `TIMEDOUT` | Exceeded the job's `timeoutSeconds`. (The chaining tasks spell it `TIMED_OUT`.) |
+| `TIMEDOUT` | Execution time exceeded; this status does not define a configurable job package property. (The chaining tasks spell it `TIMED_OUT`.) |
 
 Transitions: `PENDING` to `RUNNING` or `TERMINATED`; `RUNNING` to `COMPLETED`, `USER_ERROR`, `TIMEDOUT`, `FAILED` or `TERMINATED`.
 
@@ -94,7 +94,7 @@ The job chaining tasks (`data-job-execution-create` with `wait`, `data-job-execu
 
 Where to look: Settings > Data Factory > Actions lists executions; each execution shows the per-task events log, the downloadable task outputs and the reports. In the app, the Actions panel keeps the history of the current user's executions, with a "Selection" link showing the selected rows. Through the API, `GET /v1/data_factory/job_executions/{id}` returns `status`, `input`, `output` (the job's `outputParameters`) and dates.
 
-A task can also end in `TIMED_OUT` on its own, independently of `timeoutSeconds`: three task pages document a fixed duration and the chaining tasks a configurable wait budget (`limits.md` section 4); the others publish none.
+A task can also end in `TIMED_OUT` on its own, independently of the job status: three task pages document a fixed duration and the chaining tasks a configurable wait budget (`limits.md` section 4); the others publish none.
 
 ## 8. Outputs, reports, logs
 
@@ -108,9 +108,8 @@ A task can also end in `TIMED_OUT` on its own, independently of `timeoutSeconds`
 
 | Mechanism | Use |
 | -- | -- |
-| `timeoutSeconds` (job level) | "particularly useful to avoid blocking a pipeline when an external system is slow or unresponsive"; `0` = no timeout. |
 | `optional: true` on a task | the job continues; test `${<ref>.status}` (`COMPLETED_WITH_ERRORS`) in a `SWITCH` to react. |
-| ENUM flags (`noFile`, `allFilesTransformed`, `allFilesGenerated`, `allFilesValid`, `allEmailsSent`) | file tasks usually complete even when some files failed; branch on the flag. |
+| ENUM flags (`noFile`, `allFilesTransformed`, `allFilesGenerated`, `allFilesValid`, `allEmailsSent`) | file tasks can complete with partial output; read the flag (and the `report` when the task documents one: `file-transformation-xslt` has none), and branch when the business outcome requires it. Do not add a routine generation guard after an Excel export. |
 | `TERMINATE` with `COMPLETED` or `FAILED` | decide the outcome explicitly after a functional check; expose a message in its `outputParameters`. |
 | `<xsl:message terminate="yes">` in an XSLT | makes the transformation fail: the task page says the task still completes with `allFilesTransformed` = `NO`, the decision-and-terminate tutorial says it ends in error. Reserve it for a broken job contract or a failure the brief asks for, set `optional: true` on the task and branch on `allFilesTransformed` (a `SWITCH` ending in `TERMINATE` `FAILED`). |
 | `throw new Error(...)` in a script, `error(...)` in jq | `throw` fails the task (the job stops unless the task is `optional: true`); for jq only the `error` output is documented: test it with a `SWITCH`. Same rule as for XSLT: stop only on a broken contract or when the brief says the job must fail; any other data shape gets a fallback and a report that does not stop the job. |
@@ -126,7 +125,7 @@ A task can also end in `TIMED_OUT` on its own, independently of `timeoutSeconds`
 Rules:
 
 - "One job per pipeline: a pipeline runs a single job at a time. The triggered job must run on a different pipeline than the job that waits for it, otherwise the waiting job blocks its own trigger until the wait times out."
-- The wait budget is consumed inside the calling job, whose own `timeoutSeconds` still applies.
+- Configure the wait budget in the waiting task input; there is no job-level `timeoutSeconds` property.
 - The triggered job's results are read at `${run_job.output.result.json[0].response.output.<key>}`, where `<key>` is declared in the child's `outputParameters`.
 - Cross-account triggering passes `"apiKey": "${workflow.globalVariables.partner_api_key}"`.
 
@@ -157,5 +156,5 @@ A job can be shared with partner accounts so they launch it from their own inter
 | `*/5 * * * *` | at least 15 minutes between executions |
 | Re-uploading a package with a new `key` to update a job | same key; the job is updated in place |
 | Assuming a `COMPLETED` job means every file succeeded | test the `YES`/`NO` flags and read the reports |
-| Treating `TIMEDOUT` as "task too slow" only | the job budget (`timeoutSeconds`) includes waits for triggered jobs |
+| Inferring a job timeout property from `TIMEDOUT` | this execution status does not make `timeoutSeconds` valid at the job root; configure only documented task wait inputs |
 | Expecting job files to persist | push results to FTP, storage or email |

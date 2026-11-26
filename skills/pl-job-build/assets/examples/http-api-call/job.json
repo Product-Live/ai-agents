@@ -136,6 +136,5 @@
         "find_status_code": "${find_items_by_ean.output.statusCode}",
         "find_response": "${find_items_by_ean.output.response.json}",
         "find_response_time_ms": "${find_items_by_ean.output.responseTimeMs}"
-    },
-    "timeoutSeconds": 600
+    }
 }

@@ -36,7 +36,7 @@ All paths are relative to `<skill-dir>`. Each file carries a `Reference token:` 
 
 | File | Use it for |
 | -- | -- |
-| `references/job-format.md` | `job.json` root properties and their order, the job package (ZIP) layout, `README.md`, `CHANGELOG.md`, `.jobignore`, `timeoutSeconds` |
+| `references/job-format.md` | `job.json` root properties and their order, the job package (ZIP) layout, `README.md`, `CHANGELOG.md`, `.jobignore` |
 | `references/user-inputs.md` | the seven user input types (`TEXT`, `SELECT`, `FILE`, `TEXTAREA`, `DATE`, `FIELD`, `SCREEN`), their properties, how the value reaches a task |
 | `references/wiring.md` | every `${...}` expression form, output and input types (`FILE`, `FILES`, `ENUM`, `NUMBER`), wiring compatibility, `file://assets/` references |
 | `references/control-flow.md` | `SWITCH`, `TERMINATE`, `DO_WHILE` (`loop`), `SET_VARIABLE`, `WAIT`, the deprecated `DECISION`, `task-batch-execute`, job chaining |
