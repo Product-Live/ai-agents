@@ -4,7 +4,9 @@ Ask at most 5 questions per exchange, together, with lettered options and the re
 
 The defaults below are recommendations for open framing choices, not answers to assume silently. Apply them when the user asks for or accepts them; a reply of "defaults" does not supply concrete values or resolve contradictions. If the brief is already complete, proceed without extra questions.
 
-Collect the concrete values you will need in the same message when they are missing: table key, partition keys, field keys, FTP folder and file pattern, API domain and path, email recipients, cron expression, and the expected volume (items or file size) when the job reads a whole table or a file (it decides between the JSON route and the XML route, `job-guidelines.md`, section 5).
+Use the connected extension to resolve table, partition and field keys from the brief when possible (see "Account schema" in SKILL.md). Ask for remaining concrete values in the same message, including the FTP folder and file pattern, API domain and path, email recipients, cron expression, and the expected volume (items or file size) when the job reads a whole table or a file (it decides between the JSON route and the XML route, `job-guidelines.md`, section 5).
+
+For web research or product enrichment, use the matching case in `references/use-cases.md` to establish the search identifier before design. Include any unanswered case-specific question in the same exchange; do not ask again when the user already supplied the choice.
 
 ## 1. Goal
 
@@ -35,7 +37,7 @@ What does the user provide when launching the job?
 
 Where does the data come from?
 
-- A: items of a Product-Live table (ask the table key and, when relevant, the partition keys).
+- A: items of a Product-Live table (resolve the table key and any needed partition keys).
 - B: a file on an FTP, SFTP or FTPS server (ask the folder, the file name pattern and the connection variable names; credentials go to protected variables).
 - C: an HTTP API (ask the domain, the path, the authentication type; tokens go to protected variables; the Product-Live API itself uses `PL_KEY`).
 - D: a file uploaded by the user (see question 3).
@@ -65,7 +67,7 @@ What must exist when the job ends?
 
 What happens when something goes wrong?
 
-- A: stop in error at the first technical failure (recommended): every task `optional: false`, `timeoutSeconds` on jobs with external calls.
+- A: stop in error at the first technical failure (recommended): every task `optional: false`; configure a timeout only when the task documents such an input.
 - B: continue and report: non-blocking tasks `optional: true`, their status or `YES`/`NO` flag checked with a SWITCH, the outcome exposed in `outputParameters`.
 - C: stop in success on expected functional cases (no file on the server, empty selection): SWITCH on the flag plus TERMINATE `COMPLETED` with a message. Combine with A or B.
 - Default: A plus C for the functional cases the pattern names (`noFile`, `itemsFound`, `queryMode`). Skip when the brief says "ignore errors", "must never fail" (B) or "fail if" (A).

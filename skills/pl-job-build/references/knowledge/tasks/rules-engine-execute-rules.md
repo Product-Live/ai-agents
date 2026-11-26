@@ -68,7 +68,7 @@ Other documented shapes: `{"mode": "USER_SELECTION", "tableKey": "PRODUCTS", "ac
 - Mapping limits (per target table and account): 20 000 fields with rules, 1 000 rules per field, 500 source tables, 20 000 rules per table.
 - Best practice from the documentation: "Limit the execution to only active items."
 - "A rule whose target element already has a formula is ignored: the rule is not executed, and a message is added to the report."
-- "Emptying the source empties the target": when a copied source field is empty and the conditions are met, the target is emptied, "and it produces no log at all".
+- "Emptying the source empties the target": when a copied source field is empty and the conditions are met, the target is emptied, "and it produces no log at all". This also holds for a `MULTIPLE-SELECT` source whose options have all been removed. A source option mapped with `skip="true"` is different: for an item holding it, the rule leaves the target unchanged.
 - Applying rules "triggers a recalculation of the conditional formatting of every item it touched". "Classification rules run before field rules."
 - A table with no rule is not an error (a warning in the execution detail). Rules targeting archived elements are not applied; an archived identifier or matrix link used as a source reads as empty.
 - Test `withError` (and `withWarning`) with a `SWITCH`; the task status alone does not tell whether rules were refused.

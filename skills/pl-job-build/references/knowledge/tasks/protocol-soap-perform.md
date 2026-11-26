@@ -96,7 +96,7 @@ Default headers on every call: `content-type: text/xml`, `cache-control: no-cach
 
 - "The task ends COMPLETED even when every call failed - a non-2xx response is a result, not a task failure. allSuccess is the output to test: it is YES only when every response carried a 2xx status." Also: "allSuccess is also YES when no call was made at all ... A YES therefore means 'nothing failed', not 'something succeeded'".
 - Limit: "50 requests in a file."
-- Only Basic authentication; no timeout input is documented (set the job `timeoutSeconds`).
+- Only Basic authentication; no timeout input is documented.
 - Report inputs `skipReportGeneration` / `logLevel` apply.
 
 ## Related tasks

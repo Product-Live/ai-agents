@@ -31,8 +31,8 @@ Find items (rows) in one partition, in every partition of a table, in a list of 
 | request.model | ENUM | no | default | default | Model of the request; the examples always spell it out. |
 | request.json | OBJECT | when method = INLINE and contentType = application/json | - | - | The request body: context (when the task needs one), criteria, options, lookups. |
 | request.json.criteria | OBJECT | no | - | see the grammar below | A single criteria object. Combine conditions with and or or plus queries[]. |
-| request.json.options | OBJECT | no | - | - | Holds limit, sort and sortOrder. |
-| request.json.options.limit | STRING (written as a JSON number in every example) | no | no limit | - | Maximum number of elements returned. |
+| request.json.options | OBJECT | no | - | - | Holds limit, sort, sortOrder and includedFieldKeys. Ignored in USER_SELECTION mode. |
+| request.json.options.limit | STRING (written as a JSON number in every example) | no | no limit | - | Maximum number of items read; totalElements then counts the items read. Ignored in USER_SELECTION mode. |
 | request.json.options.sort | STRING | no | - | - | Field to sort the elements by. |
 | request.json.options.sortOrder | ENUM | no | - | ASC, DESC | Sort order. XML examples also use lowercase asc and desc; case sensitivity is not documented. |
 | request.json.lookups | ARRAY | no | - | - | Resolves business keys into ids before the request is sent (lookups reference, alpha). |
@@ -48,13 +48,13 @@ Find items (rows) in one partition, in every partition of a table, in a list of 
 | request.json.context.tableKey | STRING | form B | - | - | Business key of the table, paired with `partitionKey`. |
 | request.json.context.partitionKey | STRING | form B | - | - | Business key of the partition. |
 | request.json.context.levelId | STRING | on a multi-level table | - | - | Level to read; required on a multi-level table. |
-| request.json.options.includedFieldKeys | ARRAY | no | all fields | root field keys | Whitelist of field keys kept in each item's `fields[]`; `[]` gives `fields: []`; unknown keys ignored; root metadata (`id`, `itemMetadata`, `createdAt`, `updatedAt`, `parent`, `children`) always kept; composite fields returned whole; no dot notation; not a security mechanism. |
+| request.json.options.includedFieldKeys | ARRAY | no | all fields | root field keys | Whitelist of field keys kept in each item's `fields[]`; `[]` is dropped and returns all fields; unknown keys ignored; root metadata (`id`, `itemMetadata`, `createdAt`, `updatedAt`, `parent`, `children`) always kept; composite fields returned whole; no dot notation; not a security mechanism. |
 | findOptions | OBJECT | no | - | - | Scope options. |
 | findOptions.partitionSelection | ENUM | no | DEFAULT | DEFAULT, TABLE, LIST, ALL | Partition scope (matrix below). |
 | findOptions.tableKey | STRING | with TABLE; with LIST when partitionKeys is used | - | - | Table business key; forbidden with `partitionIds`. |
 | findOptions.partitionKeys | ARRAY | LIST only | - | 1 to 1000 keys, deduplicated, every key must exist | Partition keys inside `findOptions.tableKey`. |
 | findOptions.partitionIds | ARRAY | LIST only | - | 1 to 1000 ids, deduplicated | Partition ids; exclusive with `partitionKeys` and `tableKey`. |
-| levelId | STRING | no | - | - | `USER_SELECTION` mode only: overrides the level resolved from the launch screen. |
+| levelId | STRING | no | - | - | `USER_SELECTION` mode only: overrides the level resolved from the launch screen. In REQUEST or ALL, use request.json.context.levelId. |
 
 Scope matrix (`findMode` x `findOptions.partitionSelection`):
 
@@ -184,7 +184,8 @@ Whole-table scope: replace `context` by `"findOptions": {"partitionSelection": "
 - Multi-partition scopes run the same request once per partition and merge the results: `totalElements` is the sum, nothing says which partition an item came from, and one failing partition fails the task. `TABLE` and `LIST` iterate over at most 1000 partitions; `ALL` covers at most 100 tables of 100 partitions each; `TABLE` fails on a table with no partition or with 1000 partitions; `TABLE` cannot be narrowed with `partitionKeys` or `partitionIds`.
 - Designating a partition in `request.json.context` together with `TABLE`, `LIST` or `ALL` fails with `findOptions.partitionSelection: "..." is mutually exclusive with request.json.context.{...}`.
 - Multi-level tables need `context.levelId`: get it with `data-level-find` (or from the screen with `data-screen-find`).
-- `includedFieldKeys` dramatically reduces the payload; use it whenever only a few fields are needed.
+- `includedFieldKeys` reduces the payload in REQUEST or ALL. An empty list returns every field: stop before the task when a computed whitelist is empty. Read computed field keys from an INLINE output; navigating an ATTACHMENT file as an array returns an empty list.
+- USER_SELECTION ignores request.json and its options, including includedFieldKeys and limit. To restrict the grid selection, use REQUEST with context.partitionId from the launch view, context.levelId from data-screen-find, and criteria from workflow.input.context.query. Guard against a missing query before calling the task; null criteria fails. A select-all query covers the filtered partition, and options.limit caps how many matching items are read.
 - `findMode: "USER_SELECTION"` (request built from the items the user selected in the grid at launch; the task resolves the level from the launch screen, and the top-level `levelId` overrides it) is documented on this page only: the shared `findMode` table of the fetch tasks lists `ALL` and `REQUEST`. The VS Code extension schema lists neither `USER_SELECTION` nor `findOptions`, `levelId` or `pageSize`, so the editor may flag them; the documentation is the authority.
 
 ## Related tasks

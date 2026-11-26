@@ -105,13 +105,13 @@ Request grammar:
 - The template must be a `file://assets/...` reference; it is resolved when the job is uploaded, so the file must be present in the package (and not excluded by `.jobignore`).
 - A `Cell-Number` whose content is not a number produces `GENERATE_EXCEL_INVALID_NUMBER`; keep numbers in the XSLT with `.` as decimal separator.
 - Missing images do not stop the generation (`GENERATE_EXCEL_COMPLETE_WITH_MISSING_IMAGES`): check the report when visuals matter.
-- The documentation's inputs table has no "Required" column; the required flags above come from the inline descriptions. Validate a generated request with `file-validation-xsd` and `xsdKey: file-generation-xlsx-input-request`.
+- The documentation's inputs table has no "Required" column; the required flags above come from the inline descriptions. During development, diagnose a generated request with `file-validation-xsd` and `xsdKey: file-generation-xlsx-input-request`; remove the diagnostic task from the final job.
 - Report inputs `skipReportGeneration` and `logLevel` apply.
 
 ## Related tasks
 
 - `file-transformation-xslt` (build the request)
 - `table-export-items` (source of the data)
-- `file-validation-xsd` (check the request)
+- `file-validation-xsd` (development diagnostic for the request)
 - `file-conversion-xlsx-to-xml` (reverse direction)
 - `task-batch-execute` (one workbook per request file with a shared template)

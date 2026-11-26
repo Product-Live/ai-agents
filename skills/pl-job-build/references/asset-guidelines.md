@@ -93,18 +93,34 @@ Everything else is data the asset must handle: an optional element that is absen
 How the stop reaches the job:
 
 - JavaScript: a `throw` fails the task, and the job stops there unless the task is `optional: true`.
-- XSLT: the documentation shows both behaviours. The task page says that a file whose transformation fails is left out of `files`, that `allFilesTransformed` becomes `NO` with the reason in the report, and that the task itself still completes; the decision-and-terminate tutorial says that `terminate="yes"` makes the task end in error, and sets `optional: true` on that task so that the job goes on to the check. Cover both: set `optional: true` on the XSLT task and follow it with a SWITCH (`javascript` evaluator, input `"transformed": "${<ref>.output.allFilesTransformed}"`, expression `"$.transformed == 'YES' ? 'OK' : 'FAILED'"`) whose `FAILED` case is a TERMINATE `FAILED` carrying the user-facing message in its `outputParameters`, as for `allEmailsSent` in `references/patterns.md` P11. The expression treats anything but `YES`, an empty value included, as a failure. Without the check, the next task fails later on a missing file with an unrelated error, and the message never reaches the user.
+- XSLT: the documentation shows both behaviours. The task page says that a file whose transformation fails is left out of `files`, that `allFilesTransformed` becomes `NO`, and that the task itself still completes; the decision-and-terminate tutorial says that `terminate="yes"` makes the task end in error, and sets `optional: true` on that task so that the job goes on to the check. Cover both: set `optional: true` on the XSLT task and follow it with a SWITCH (`javascript` evaluator, input `"transformed": "${<ref>.output.allFilesTransformed}"`, expression `"$.transformed == 'YES' ? 'OK' : 'FAILED'"`) whose `FAILED` case is a TERMINATE `FAILED` carrying the user-facing message in its `outputParameters`, as for `allEmailsSent` in `references/patterns.md` P11. The expression treats anything but `YES`, an empty value included, as a failure. XSLT has no `report` output; the failure branch supplies its own message. Without the check, the next task fails later on a missing file with an unrelated error, and the message never reaches the user.
 - jq: the only documented effect of a failing expression is the `error` output ("an optional error message, indicating that the JQ query failed processing"); whether the task or the job fails is not documented. Follow the task with a SWITCH on `${<ref>.output.error}` (`javascript` evaluator, expression `"$.error ? 'FAILED' : 'OK'"`) whose `FAILED` case is a TERMINATE `FAILED` with the user-facing message.
 
 Every stopping message says what is wrong, where (key, path or position) and what to do, in one sentence: "Screen CURRENT_VIEW not found in the schema export of table PRODUCTS: launch the job from a grid that displays a screen."
 
-## 4. Lint the scripts before packaging
+## 4. Validate values and lint the scripts before packaging
+
+### Calendar dates from untrusted input
+
+When accepting an AI-proposed `DATE` or `DATE-TIME`, validate the calendar date as well as its string shape. `Date.parse` can normalize an impossible day into the next month. A small check for a `YYYY-MM-DD` value is:
+
+```javascript
+function isCalendarDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    var date = new Date(value + 'T00:00:00Z');
+    return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+```
+
+For `DATE-TIME`, validate the full documented timestamp shape and timezone, check its leading date with this function, then check that parsing succeeds. A finite timestamp alone is insufficient. Reject the proposed value with a reason according to the job's failure policy; do not silently normalize it.
+
+### Static script checks
 
 Lint each JavaScript script, SWITCH or loop expression and jq expression with `scripts/lint-script.js` and fix every error. The lint is a static check: it never runs the script and never proves that the job works on the platform. Cover every documented shape of section 2 in the code itself (each optional element absent, each choice branch, empty values, repeated values, missing translations), not only the shape of the documentation example.
 
 ## 5. Write for the engine that runs the asset
 
-- XSLT: XSLT 3.0 and XPath 3.1 only, no processor-specific extension; `params[].select` values arrive as literal strings, file parameters as a path or URL string to open with `doc()` or `unparsed-text()`; declare every `xsl:param` with a default and `as="xs:string"`, then convert inside (`xs:integer($n)`) and compare flags as strings (`normalize-space(upper-case($flag)) = 'YES'`). A `YES`/`NO` flag declared `as="xs:boolean"` cannot receive `YES`; whether the platform passes `xs:string` or untyped values is not documented. Declare `encoding="UTF-8"` on `xsl:output`; use `xsl:key` for lookups on large exports instead of repeated path searches.
+- XSLT: XSLT 3.0 and XPath 3.1 only, no processor-specific extension; `params[].select` values arrive as literal strings, file parameters as a path or URL string to open with `doc()` or `unparsed-text()`; declare each top-level `xsl:param` supplied by the job with a default and `as="xs:string"`, then convert inside (`xs:integer($n)`) and compare flags as strings (`normalize-space(upper-case($flag)) = 'YES'`). A `YES`/`NO` flag declared `as="xs:boolean"` cannot receive `YES`; whether the platform passes `xs:string` or untyped values is not documented. Declare `encoding="UTF-8"` on `xsl:output`; use `xsl:key` for lookups on large exports instead of repeated path searches.
 - JavaScript (`code-execute-javascript`): standard ECMAScript, no network, no modules, 10 minutes per task; read inputs from `$.data` and `$.resources`, return the result, `throw` to fail. A script that writes XML or HTML (the request of another task, an email) escapes every value and returns one file per execution (`references/job-guidelines.md`, section 6.3).
 - JavaScript expressions of `SWITCH` and `DO_WHILE`: write ES5 syntax (no `let`, `const`, arrow functions or template literals) and no side effects; this is a conservative convention of these skills, the documentation states no language version.
 - jq: the platform subset has no date functions; guard optional paths with `?` and `// default`. The expression is written inline in `queryExpression`, a JSON string on one line with inner double quotes escaped: the task takes no expression file. When the logic no longer fits on a readable line, move it to `code-execute-javascript` with `expressionFile`.
@@ -123,5 +139,5 @@ Lint each JavaScript script, SWITCH or loop expression and jq expression with `s
 - [ ] The asset signals a stop only on a broken contract or when the brief says fail; every other case has a fallback and a non-stopping report.
 - [ ] An XSLT that can stop on purpose runs in an `optional: true` task followed by a SWITCH on `allFilesTransformed` that ends in TERMINATE `FAILED`; a jq expression that can call `error(...)` on purpose is followed by a SWITCH on `error` that ends the same way.
 - [ ] Every stopping message names the problem, the place and the remedy.
-- [ ] Every `xsl:param` has a default and `as="xs:string"`.
+- [ ] Every top-level stylesheet parameter supplied by the job has a default and `as="xs:string"`.
 - [ ] Every JavaScript script, SWITCH or loop expression and jq expression passes `scripts/lint-script.js` without error.

@@ -1,7 +1,7 @@
 {
   "name": "product-live",
-  "description": "Product-Live Data Factory skills and agent.",
-  "version": "1.0.2",
+  "description": "Product-Live Data Factory skills and agents.",
+  "version": "1.1.0",
   "owner": {
     "name": "Product-Live",
     "url": "https://github.com/Product-Live"
@@ -10,7 +10,7 @@
     {
       "name": "product-live",
       "source": "./",
-      "description": "Data Factory skills (pl-explain, pl-job-build, pl-update) and the pl-job-architect agent."
+      "description": "Data Factory skills and agents for job design and local task testing."
     }
   ]
 }

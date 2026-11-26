@@ -2,5 +2,6 @@
 .jobignore
 assets/TESTS/*
 tests/*
+*.test.ts
 node_modules/*
 .git/*

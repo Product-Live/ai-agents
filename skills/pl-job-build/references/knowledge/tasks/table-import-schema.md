@@ -217,6 +217,8 @@ No `accountKey`: a schema is always imported into a table of the current account
 - Limits: input file 900 Mb; 50 000 sections per table; 500 000 fields per table; 5 identifiers; 8 conditional formatting fields per the limits page (the page body says 5); 5 classifications; 30 000 options per field (best practice 500); 2 000 rules per formula field; 5 000 values per condition; classification depth 5; composite depth 5.
 - "The data type of a field can't be changed. The key of a field can't be changed. The order of the fields or sections doesn't matter." Level `index`, identifier `index` and suffix `key` cannot be updated either.
 - `EXHAUSTIVE` archives everything absent from the file; `INCREMENTAL` (default) adds and updates.
+- Supplied screen `Grid/Common` and `Grid/Specific` blocks replace their sections and columns, including in `INCREMENTAL` mode. Provide each included block completely; omit unrelated blocks from a targeted update. Reimporting unchanged screen content still performs this replacement.
+- Completion can coexist with ignored definitions or references. Inspect the import report for errors and warnings; an unknown category in a conditional-formatting `Specific` block causes that block to be ignored with an error. Keep source defects separate from transformation defects.
 - Minimal viable table (implied by the documentation): one level (index 1), one active partition, one identifier with `level`, fields with `level`, a `Matrix/Common` listing every field, one section and one screen referencing it.
 - Excluded from `task-batch-execute`; triggers an item refresh unless `skipItemRefresh: "YES"` (then run `table-refresh-items` when needed).
 - Report inputs `skipReportGeneration` / `logLevel` apply.

@@ -123,12 +123,12 @@ XML:
 - Escape `&`, `<`, `>` (and quotes inside attributes) with entities; the conversion tasks never emit CDATA. Rule and formula templates are wrapped in `<![CDATA[...]]>` "to prevent the XML parser from interpreting special characters (such as `<`, `>`, `&`) as XML markup" (rules engine templates guide).
 - Put HTML only in `HTML-TEXT` fields, "a long text field that can be formatted with html" (recommendation).
 - Write XPaths that identify nodes uniquely (`Identifier[@key='EAN_13']`), avoid `//`, and declare namespaces (`xmlns="http://www.w3.org/2005/xpath-functions"` for the JSON-in-XML grammar used by data task requests and `json-to-xml()`).
-- Validate generated request documents with `file-validation-xsd` and the platform `xsdKey` catalogue before feeding them to the consuming task.
+- During development, diagnose generated request documents with `file-validation-xsd` and the platform `xsdKey` catalogue. Remove the diagnostic task from the final job.
 
 JSON:
 
 - `job.json` and every JSON asset: strict JSON, no comments, no trailing commas, double quotes only.
-- Keep `schema` a string (`"1.0"`), `optional` a boolean, `timeoutSeconds` and `height` numbers.
+- Keep `schema` a string (`"1.0"`), `optional` a boolean, `height` and documented task timeout inputs numbers.
 - jq expressions live in `queryExpression` strings: escape inner double quotes (`\"`).
 - JSON produced by a script with `response: "FILE"` is written as returned (objects are serialised); produce plain objects and arrays, not class instances or `undefined` values.
 - Option field values in criteria take the option key (`"value": "NEW"`), not the label; `MULTIPLE-SELECT` and `COMPOSITE` fields are not searchable through criteria; `HTML-TEXT` values include their tags.

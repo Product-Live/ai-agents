@@ -79,9 +79,10 @@ A good README also lists the user inputs, the global variables to create (with t
 | `userInputs` | optional | array | Form fields presented to the user when they start the job. It is an array. See `user-inputs.md`. |
 | `tasks` | required | array | Ordered array of tasks that define the execution flow. |
 | `outputParameters` | optional | object | Mapping of user-facing output keys to task outputs. It is an object, not an array. See `wiring.md`. |
-| `timeoutSeconds` | optional | number | Job timeout in seconds. When exceeded the execution ends with status `TIMEDOUT`. `0` means no timeout. |
 
-Documented property order: `schema`, `key`, `title`, `icon`, `titleLocal`, `description`, `descriptionLocal`, `userInputs`, `tasks`, `outputParameters`, `timeoutSeconds` (the "All Properties" example of the jobs page). Keep this order (convention of these skills).
+Documented property order: `schema`, `key`, `title`, `icon`, `titleLocal`, `description`, `descriptionLocal`, `userInputs`, `tasks`, `outputParameters`. Keep this order (convention of these skills).
+
+`timeoutSeconds` is not supported at the job root or in the task envelope. The waiting tasks document timeout inputs at their own paths; those inputs do not extend the package format.
 
 A top-level `version` string appears in some published packages (the generic jobs of the documentation). It is not part of the documented property table: prefer recording versions in `CHANGELOG.md`.
 
@@ -170,8 +171,7 @@ A top-level `version` string appears in some published packages (the generic job
   ],
   "outputParameters": {
     "excel_files": "${generate_excel.output.files}"
-  },
-  "timeoutSeconds": 0
+  }
 }
 ```
 

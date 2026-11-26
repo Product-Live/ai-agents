@@ -53,7 +53,7 @@ Date variant: `"inputParameters": {"until": "2025-12-25 09:00 CEST"}`.
 ## Gotchas and limits
 
 - Alpha: a recent task, available on every account.
-- "duration and until are mutually exclusive - Provide exactly one of them: Setting both makes the task end in error ... Setting neither makes the task wait indefinitely - the job stays in progress until it is cancelled or hits its own timeout." Always set the job `timeoutSeconds` when using this task.
+- Provide exactly one of `duration` and `until`. Setting both makes the task end in error; setting neither makes it wait indefinitely. A job-level `timeoutSeconds` property cannot bound this wait because it is not part of the package format.
 - Global variables are not supported as inputs of this task.
 - One running job per pipeline: a waiting job blocks the other jobs of its pipeline.
 

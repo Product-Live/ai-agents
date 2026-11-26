@@ -1,13 +1,21 @@
-// Parse the results of the run_ai_prompts batch and build the suggestion_create operations.
+// Parse the collected results of analyze_items and build suggestion_create operations.
 //
-// Data: batchResults (the inline result list of task-batch-execute: one entry per item,
-// { key, index, status, success, output: { content, ... } | error }), screenId, suggestionName.
+// Data: loopOutput (numbered entries containing collect_ai_result.result), screenId,
+// suggestionName. Each collected result has itemId, success and optional content.
 //
 // Each AI answer is expected to be {"corrections": [{"fieldKey", "fieldType", "correctedValue"}]}.
 // A failed entry, a missing content, an unparsable answer or an unexpected shape counts as one
 // error and does not stop the others.
 var data = $.data || {};
-var batchResults = data.batchResults || [];
+var loopOutput = data.loopOutput || {};
+var results = Object.keys(loopOutput).filter(function (key) {
+    return /^[0-9]+$/.test(key);
+}).sort(function (left, right) {
+    return Number(left) - Number(right);
+}).map(function (key) {
+    var entry = loopOutput[key] || {};
+    return entry.collect_ai_result ? entry.collect_ai_result.result : null;
+});
 var screenId = String(data.screenId);
 var suggestionName = data.suggestionName;
 
@@ -17,19 +25,19 @@ var errorCount = 0;
 var suggestionsCount = 0;
 var opKey = 1;
 
-for (var i = 0; i < batchResults.length; i++) {
-    var result = batchResults[i] || {};
+for (var i = 0; i < results.length; i++) {
+    var result = results[i] || {};
 
     if (!result.success) {
         errorCount++;
-        log('Item ' + result.key + ' failed: ' + JSON.stringify(result.error));
+        log('Item ' + result.itemId + ': the AI request failed');
         continue;
     }
 
-    var content = result.output != null ? result.output.content : null;
+    var content = result.content;
     if (content == null) {
         errorCount++;
-        log('Item ' + result.key + ': no content in the answer');
+        log('Item ' + result.itemId + ': no content in the answer');
         continue;
     }
 
@@ -39,20 +47,20 @@ for (var i = 0; i < batchResults.length; i++) {
             parsed = JSON.parse(content);
         } catch (e) {
             errorCount++;
-            log('Item ' + result.key + ': the answer is not valid JSON: ' + e);
+            log('Item ' + result.itemId + ': the answer is not valid JSON');
             continue;
         }
     } else if (typeof content === 'object') {
         parsed = content;
     } else {
         errorCount++;
-        log('Item ' + result.key + ': unsupported answer content');
+        log('Item ' + result.itemId + ': unsupported answer content');
         continue;
     }
 
     if (parsed == null || typeof parsed !== 'object' || !Array.isArray(parsed.corrections)) {
         errorCount++;
-        log('Item ' + result.key + ': the answer must contain a corrections array');
+        log('Item ' + result.itemId + ': the answer must contain a corrections array');
         continue;
     }
 
@@ -62,8 +70,7 @@ for (var i = 0; i < batchResults.length; i++) {
         continue;
     }
 
-    // The batch key is "item-<id>"
-    var itemId = String(result.key).replace('item-', '');
+    var itemId = String(result.itemId);
 
     var fields = [];
     for (var j = 0; j < corrections.length; j++) {
@@ -103,6 +110,7 @@ log('Processed: ' + processedCount + ', errors: ' + errorCount + ', corrected va
 return {
     hasSuggestions: operations.length > 0,
     suggestionsCount: suggestionsCount,
+    operationCount: operations.length,
     operations: operations,
     processedCount: processedCount,
     errorCount: errorCount

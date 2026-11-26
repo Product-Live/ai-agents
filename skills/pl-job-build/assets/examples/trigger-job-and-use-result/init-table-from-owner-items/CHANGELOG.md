@@ -10,7 +10,6 @@ All notable changes to this job are documented in this file. The format is based
 
 ### Added
 
-- Job-level `timeoutSeconds` (3600) above the wait timeout.
 - README with the two-account setup.
 
 ## [1.0.0] - 2026-08-24

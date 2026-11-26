@@ -25,7 +25,7 @@ Return the account (organization) in which the job is executed, as a one-element
 | outputs | ARRAY | no | [{"mediaType": "application/json", "outputMode": "INLINE", "outputKey": "json"}] | - | Output descriptors. No `apiKey`, `findMode` or `request` on this task. |
 | outputs[].mediaType | STRING | yes, inside outputs | - | application/json, application/xml | Media type of the output. |
 | outputs[].outputMode | ENUM | yes, inside outputs | - | INLINE, ATTACHMENT | INLINE is only supported for application/json. |
-| outputs[].outputKey | STRING | yes, inside outputs | - | json, xml | Key under result that holds this output. |
+| outputs[].outputKey | STRING | yes, inside outputs | - | json, xml | Key under output that holds this output. |
 | outputs[].model | ENUM | no | default | default | Model of the output. |
 
 ## Outputs
@@ -33,11 +33,13 @@ Return the account (organization) in which the job is executed, as a one-element
 | Path | Type | Meaning |
 | --- | --- | --- |
 | ${get_current_account.output.totalElements} | NUMBER | Always 1. |
-| ${get_current_account.output.result.json} | ARRAY | One account object: `object` (`account`), `id`, `createdAt`, `updatedAt`, `key`, `name`. |
-| ${get_current_account.output.result.json[0].id} | STRING | Id of the current account. |
-| ${get_current_account.output.result.json[0].key} | STRING | Key of the current account. |
-| ${get_current_account.output.result.json[0].name} | STRING | Name of the current account. |
-| ${get_current_account.output.result.xml} | FILE | XML file (`<array xmlns="http://www.w3.org/2005/xpath-functions"><map>...</map></array>`) when an ATTACHMENT XML output is declared. |
+| ${get_current_account.output.output.json} | ARRAY | One account object: `object` (`account`), `id`, `createdAt`, `updatedAt`, `key`, `name`. |
+| ${get_current_account.output.output.json[0].id} | STRING | Id of the current account. |
+| ${get_current_account.output.output.json[0].key} | STRING | Key of the current account. |
+| ${get_current_account.output.output.json[0].name} | STRING | Name of the current account. |
+| ${get_current_account.output.output.xml} | FILE | XML file (`<array xmlns="http://www.w3.org/2005/xpath-functions"><map>...</map></array>`) when an ATTACHMENT XML output is declared. |
+
+The first `.output` in an expression selects the task output; the second selects its `output` map. `${get_current_account.output}` still returns the complete task output, including `totalElements`. Keys in the map follow `outputs[].outputKey`; `json` is the default key.
 
 Example output (adapted from the documentation):
 
@@ -72,7 +74,7 @@ XML variant: `"inputParameters": { "outputs": [ { "mediaType": "application/xml"
 ## Gotchas and limits
 
 - Alpha task: a recent task, available on every account.
-- `result.json` is an array even though it always holds one element: read `[0]`.
+- `output.json` is an array even though it always holds one element: read `[0]`.
 - The page includes the shared 1000-element INLINE limit although at most one element is returned; irrelevant here.
 - Required per schema: none; the only accepted key is `outputs`.
 

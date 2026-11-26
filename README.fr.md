@@ -1,10 +1,20 @@
-# Skills Data Factory de Product-Live
+# Agents & Skills Product-Live
 
 [English version](README.md)
 
-Des skills et un agent qui aident les utilisateurs de Product-Live à concevoir des jobs Data Factory depuis leur assistant de code IA. Ils répondent aux questions sur Data Factory à partir de la documentation publique (`pl-explain`), créent, revoient, valident et empaquettent des jobs (`pl-job-build`, agent `pl-job-architect`), et mettent à jour une installation (`pl-update`).
-Ils fonctionnent avec leurs propres fichiers et Node.js 18 ou plus ; `pl-explain` peut aussi lire la documentation publique en ligne. Ils n'appellent pas la plateforme Product-Live et n'exécutent pas de job : vous importez vous-même le `.job.zip` généré.
-Version 1.0.2. Notes de version : [CHANGELOG.md](CHANGELOG.md).
+Les agents et skills Product-Live sont en bêta publique. Nous continuons de les enrichir et de publier des correctifs au fil des versions.
+
+Utilisez ces skills dans votre assistant de code pour travailler sur vos jobs Data Factory.
+
+| Skill | Quand l'utiliser |
+| -- | -- |
+| `pl-explain` | Poser une question sur Data Factory. Le skill peut consulter la documentation publique en ligne. |
+| `pl-job-build` | Créer ou modifier les fichiers du job, les valider, lancer les tests locaux des tâches et produire un `.job.zip`. |
+| `pl-job-audit` | Vérifier un job existant par rapport à vos exigences et obtenir la liste des écarts par ordre de priorité. |
+| `pl-job-run` | Créer ou mettre à jour un job sur votre compte, le lancer avec vos paramètres, examiner une exécution ou télécharger ses fichiers de sortie. |
+| `pl-update` | Vérifier la version installée, mettre à jour ou désinstaller les skills. |
+
+Version 1.1.0. Notes de version : [CHANGELOG.md](CHANGELOG.md).
 
 ## Prérequis
 
@@ -77,6 +87,17 @@ Pour installer dans un seul projet, lancez la commande depuis la racine du proje
 - "Qu'attend la tâche table-import-items en entrée ?"
 - "Crée un job qui importe chaque nuit un fichier CSV depuis un serveur SFTP dans la table PRODUCTS."
 - "Revois le job de ./export-products et dis-moi pourquoi le validateur échoue."
+- "Utilise pl-job-run pour examiner l'exécution 123. Télécharge le tableur et vérifie quels produits il contient."
+
+## De la préparation locale à l'exécution sur la plateforme
+
+"Crée un job Product-Live" prépare les fichiers dans votre espace de travail. Si vous demandez aussi de créer, de mettre à jour ou de lancer le job sur Product-Live, `pl-job-build` transmet le dossier et votre demande à `pl-job-run` une fois la validation et l'empaquetage réussis. Pour un job déjà publié, utilisez directement `pl-job-run` avec l'identifiant du job ou de l'exécution.
+
+Connectez-vous et sélectionnez votre compte dans l'extension Product-Live pour VS Code. Votre assistant principal utilise directement `pl-job-run` et vérifie le job enregistré via l'extension avant de l'envoyer. Avant la création, il affiche le compte, l'environnement, le projet, le pipeline, le titre et la clé. Il vous demande de choisir si plusieurs projets ou pipelines sont disponibles.
+
+Par défaut, vous confirmez chaque création, mise à jour ou lancement de job. Dans les paramètres de VS Code, `productlive.testsMcp.allowCreateAndUpdateWithoutConfirmation` règle la confirmation des créations et des mises à jour. L'aperçu reste affiché avant la création. `productlive.testsMcp.allowRunWithoutConfirmation` règle la confirmation des lancements.
+
+Si le résultat est incorrect, demandez une correction et un nouvel essai. `pl-job-run` transmet l'identifiant de l'exécution et le résultat observé à `pl-job-build`. Une fois la correction vérifiée et le job empaqueté, `pl-job-run` met à jour le même job sur la plateforme et le relance.
 
 ## Personnalisation
 
@@ -92,13 +113,35 @@ Par défaut, les jobs sont rédigés en anglais et suivent les règles de concep
 
 N'écrivez jamais de mot de passe, de jeton ni de clé d'API dans un fichier d'instructions.
 
+Pour un job qui utilise une feuille XSLT, `pl-xslt-expert` écrit ou relit la transformation et analyse les résultats inattendus. Vous pouvez lui demander pourquoi une jointure perd des lignes ou comment modifier une correspondance en préservant les autres champs. L'assistant exécute les vérifications XSLT exclusivement via le MCP de l'extension VS Code Product-Live.
+
+## Audit des jobs
+
+Demandez à `pl-job-audit` d'auditer un dossier de job ou un `.job.zip`. Précisez le résultat attendu si vous le connaissez. Le bilan couvre le besoin métier, le traitement des données, les effets sur le compte, les secrets, la maintenance et les tests. Chaque écart indique la tâche concernée, son impact et une amélioration possible. Le bilan signale les points qui restent à vérifier.
+
+`pl-job-build` appelle le même agent en lecture seule, `pl-job-auditor`, après la validation et les tests locaux, avant l'empaquetage. Le build corrige les défauts confirmés dans le périmètre demandé et inclut l'audit final dans son rapport.
+
+## Tests locaux des tâches
+
+Ajoutez une version compatible de [l'extension Product-Live pour VS Code](https://marketplace.visualstudio.com/items?itemName=Product-Live.product-live) pour accéder aux vues Jobs et Testing. La connexion MCP permet à `pl-job-build` d'écrire et d'exécuter des tests locaux lors de la création ou de la modification d'un job.
+
+1. Ouvrez le workspace du job dans VS Code, marquez-le comme espace de confiance et activez la vue Jobs de Product-Live. Rechargez la fenêtre si VS Code le demande.
+2. Lancez **Product-Live: Copy Tests MCP Configuration**. La commande démarre le serveur si nécessaire.
+3. Ajoutez l'URL et l'en-tête d'autorisation de `product-live-vscode` aux paramètres MCP de votre assistant. Gardez VS Code ouvert et le jeton hors des fichiers du job, des conversations et du contrôle de version.
+
+`pl-job-architect` prépare le job et lance la validation statique et le lint. Dès que le MCP répond pour le workspace du job, `pl-job-local-tester` écrit et exécute les suites pour les tâches prises en charge, comme JavaScript, XSLT et la validation XSD. Il utilise des données fictives, corrige les échecs et vérifie un passage complet sur les fichiers finaux avant l'empaquetage. Dans Vibe, l'assistant principal relaie les appels MCP pour l'agent de test. Si la connexion est indisponible, la skill indique ce qui manque et quels tests n'ont pas pu s'exécuter. Les résultats locaux portent uniquement sur le code et les données de test utilisés.
+
+Vous pouvez demander à l'assistant de lister les tables du compte sélectionné dans VS Code, de rechercher les champs ou les partitions d'une table, ou d'afficher les colonnes d'une section d'écran. Par exemple, demandez "Quel champ contient l'EAN dans ma table de produits ?". L'assistant consulte les champs via l'extension et vous demande de choisir si plusieurs correspondent.
+
+Si le job utilise une variable de compte, `pl-job-build` vous aide à choisir une clé existante ou signale une clé à créer dans son rapport. Avant la publication, `pl-job-run` vérifie quelles clés manquent encore et vous demande de confirmer leur création. Saisissez les valeurs secrètes dans VS Code.
+
 ## Mise à jour
 
 - Claude Code : dans un terminal, `claude plugin update product-live@product-live`, puis une nouvelle session. Pour la mise à jour automatique : `/plugin`, onglet Marketplaces, `product-live`, Enable auto-update.
 - Gemini CLI : `gemini extensions update product-live`.
 - Codex, Vibe, Antigravity CLI : relancez la commande d'installation, ou demandez à votre assistant "mets à jour les skills Product-Live".
 
-Pour connaître votre version, demandez à votre assistant "quelle version des skills Product-Live ai-je ?".
+Quand vous utilisez `pl-job-build` ou `pl-job-run`, l'assistant vérifie une fois par conversation si une version plus récente existe. Si elle est disponible, il indique la commande de mise à jour et poursuit votre demande. Pour vérifier directement la version installée, demandez-la à `pl-update`.
 
 ## Désinstallation
 

@@ -100,6 +100,13 @@ Actions (one `Action` per rule; `@type` depends on the target type):
 | IMAGE | SET_IMAGE | `Copy` (`@width-px`, `@height-px`, `@quality` 1..100, `@format` jpg / png) |
 | ATTACHMENT | SET_ATTACHMENT | `Copy` |
 
+`Map` rules for the three select actions:
+
+- `SET_OPTION`: `Map/@source` is a `SINGLE-SELECT` field or a classification.
+- `SET_OPTIONS`: `Map/@source` is a `MULTIPLE-SELECT`, `MULTIPLE-SELECT-QUANTIFIED` or `MULTIPLE-SELECT-QUANTIFIED-WITH-COMMENTS` field. "A `Classification` cannot be used as source."
+- An `Entry` whose source option or category is archived must carry `skip="true"`, otherwise the rule is rejected (`RULE_SOURCE_OPTION_IS_ARCHIVED`). An archived target option or category is not checked.
+- Several source options can point to the same target option. When an item holds several of them, the target option is set once, with the quantity and comment of the last one.
+
 ```xml
 <Action type="SET_TEXT">
     <Template trim-spaces="true" engine="twig.1"><![CDATA[

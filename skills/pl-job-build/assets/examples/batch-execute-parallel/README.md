@@ -87,7 +87,7 @@ A batch task that fails does not stop the others: it is listed in `failedTasks` 
 
 ## Adapting
 
-- Same task N times: set a top-level `taskName` and omit it in the entries (for example `taskName: protocol-http-perform` with one entry per URL, or `ai-prompt-execute` with one prompt per item as in `ai-typo-detection-suggestions`).
+- Same task N times: set a top-level `taskName` and omit it in the entries (for example `taskName: protocol-http-perform` with one entry per URL).
 - List built at runtime: have a `code-execute-javascript` task return `{ tasks: [...] }` and inject it whole: `"json": "${build_tasks.output.result}"`. Never leave a placeholder string where a task list is expected: the job creation fails.
 - Large results: ask the batch for `outputMode: ATTACHMENT` and read the file with a `resources` entry in the script.
-- Dependent steps: when each iteration needs the previous one, use the `loop` task instead of a batch.
+- Dependent steps: when each iteration needs the previous one, use the `loop` task instead of a batch. A declared task inside a loop also keeps a protected credential in its connection input when a dynamic batch would otherwise require passing it through a script; see `ai-typo-detection-suggestions`.

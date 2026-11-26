@@ -34,7 +34,7 @@ Create suggestions: proposed field values on an existing item, to be reviewed an
 | request.json.operations[].lookups | ARRAY | no | - | - | Resolves business keys into ids for this operation (lookups reference, alpha); assign must start with element., options. or context. |
 | request.json.lookups | ARRAY | no | - | - | Same mechanism, declared once for the whole request. |
 | request.file | OBJECT | when method = ATTACHMENT | - | - | File holding the request body: a file object produced by an earlier task or a file://assets/ reference. |
-| failOnError | BOOLEAN | no | false (documented on data-job-execution-create only) | true, false | Fail the task when at least one operation is rejected; otherwise rejected operations are reported in the output with their error body. Undocumented on this task; accepted by the job schema and used in several documentation examples of this family. |
+| failOnError | BOOLEAN | no | false | true, false | Every operation is attempted. If true, the task then ends FAILED when at least one request was refused (status 400 or more), after other suggestions were created. If false, the task completes with each response, including errors. |
 | outputs | ARRAY | no | [{"mediaType": "application/json", "outputMode": "INLINE", "outputKey": "json"}] | - | Output descriptors. |
 | outputs[].mediaType | STRING | yes, inside outputs | - | application/json, application/xml | Media type of the output. |
 | outputs[].outputMode | ENUM | yes, inside outputs | - | INLINE, ATTACHMENT | INLINE is only supported for application/json. |
@@ -146,13 +146,15 @@ With `request.method = "ATTACHMENT"` and `request.contentType = "application/xml
 
 ## Gotchas and limits
 
+- An empty `operations` list fails the task. Use a SWITCH to skip creation when a computed list is empty.
+
 - Alpha task: a recent task, available on every account.
 - The creation and update of suggestions is limited to 100 suggestions per minute. This page does not include the 1000-element INLINE limit.
 - A field key the table does not hold (or holds archived) is dropped silently: a suggestion that comes back with fewer fields than you sent is the sign to check those keys. `{"data": 42}` on a text field and `{"data": "42"}` on a NUMBER are both refused.
 - Images and attachments: any http or https URL, downloaded while the suggestion is created (a Product-Live-hosted file is copied). IMAGE must be JPEG, PNG, WebP or GIF, under 20 MB and under 50 megapixels; ATTACHMENT under 2 GB, format not checked (an address answering with an error page is attached as that page); a hotlink 403 is a refusal. Image field (verbatim): `{ "key": "FRONT_VIEW", "type": "IMAGE", "value": { "data": { "url": "https://www.example.com/media/ref-1234-front.jpg" } } }`.
 - Keep the fields whose value is an address in an operation of their own: operations run one by one and a failing one does not stop the others, so a dead address then costs its own fields instead of every field suggested for that item (verbatim tip).
 - `hasCreatedItem` is required even though it is informational; `context` is `{}` in the file examples.
-- `failOnError` is documented only on data-job-execution-create (default `false`): operations run one by one and a rejected operation does not stop the others unless `failOnError` is `true`.
+- `failOnError` defaults to false. When true, all operations are still attempted before the task fails if any request was refused; this is not a rollback.
 - The XML request text shared by every write task states that the task performs a full replacement of the target entity and that omitted properties are reset to their default value; it is pulled into this page too. It does not describe this task.
 - The documentation writes `request.file` as the placeholder `"@my-request.xml"`; that syntax is never defined. In a real job pass a file object produced by an earlier task or a `file://assets/<name>.xml` asset.
 - `outputs[].outputKey` is documented as `json` or `xml`, but the shared output example uses free keys (`json_inline`, `xml_attachment`); the documentation shows both, prefer `json` and `xml`.

@@ -58,7 +58,7 @@ No `accountKey`: only tables of the current account.
 
 ## Gotchas and limits
 
-- No limits snippet; the duration of a refresh is undocumented and `ALL` can be long. Set the job `timeoutSeconds` accordingly.
+- No limits snippet; the duration of a refresh is undocumented and `ALL` can be long. Keep the refresh scope limited to the items that need it.
 - Cannot be batched with `task-batch-execute`.
 - The documentation example uses a `taskReferenceName` with spaces; generate snake_case names instead.
 - Report inputs `skipReportGeneration` / `logLevel` apply.

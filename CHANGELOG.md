@@ -2,6 +2,14 @@
 
 All notable changes to this repository are documented in this file. The project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] (2026-11-26)
+
+
+### Features
+
+* add local task tests, job audits, and job execution through VS Code (#4)
+* split platform operations into the pl-job-run skill (#6)
+
 ## [1.0.2] (2026-11-13)
 
 

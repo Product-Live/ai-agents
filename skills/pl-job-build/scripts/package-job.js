@@ -29,7 +29,7 @@ const path = require('path');
 const zlib = require('zlib');
 
 const DEFAULT_IGNORE = ['*.job.zip', '.jobignore'];
-const ALWAYS_IGNORE = ['node_modules/', '.git/', '*.run.json', '*.df-test.json', '*.test.js', 'TESTS/', '__tests__/', '__fixtures__/'];
+const ALWAYS_IGNORE = ['node_modules/', '.git/', '.product-live-downloads/', '*.run.json', '*.df-test.json', '*.test.js', 'TESTS/', '__tests__/', '__fixtures__/'];
 const ALWAYS_KEEP = ['README.md', 'CHANGELOG.md'];
 const STORE_BELOW = 64;
 

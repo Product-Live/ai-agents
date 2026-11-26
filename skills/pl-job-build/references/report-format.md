@@ -7,8 +7,19 @@ The template below describes a completed create or modify task. For review, use 
 ```markdown
 ## <Job title> (`<job-key>`)
 
-Status: validated and packaged, not executed. Mode: <create | modify>.
+Status: validated and packaged, not sent to the platform. Mode: <create | modify>.
 Package: `./<job-key>/` and `./<job-key>.job.zip` (<N> errors, <M> warnings explained below).
+Extension diagnostics (`validate_job`): <N> errors, <M> warnings, or "not available" with the reason.
+
+### Files to review
+
+Files that go to Product-Live with the package, as links to their absolute paths:
+
+- [job.json](<absolute path>/job.json)
+- [README.md](<absolute path>/README.md)
+- [CHANGELOG.md](<absolute path>/CHANGELOG.md)
+- [assets/<file>](<absolute path>/assets/<file>) (one line per asset)
+- Package: [<job-key>.job.zip](<absolute path of the zip>)
 
 ### What the job does
 
@@ -31,12 +42,12 @@ Package: `./<job-key>/` and `./<job-key>.job.zip` (<N> errors, <M> warnings expl
 
 (none when the job has no user input)
 
-### Variables to create (Settings > Data Factory > Variables)
+### Account variables
 
-| Key | Secret | Description |
-| -- | -- | -- |
-| `ftp_host` | no | Host name of the SFTP server |
-| `ftp_password` | yes | Password of the SFTP user |
+| Key | Secret | Status | Description |
+| -- | -- | -- | -- |
+| `ftp_host` | no | reused | Host name of the SFTP server |
+| `ftp_password` | yes | to create | Password of the SFTP user |
 
 ### Outputs
 
@@ -50,6 +61,18 @@ Package: `./<job-key>/` and `./<job-key>.job.zip` (<N> errors, <M> warnings expl
 | -- | -- |
 | <message> | <explanation> |
 
+### Local task tests
+
+| Task / suite | Result | Evidence / remaining work |
+| -- | -- | -- |
+| <reference or suite path> | passed / failed / missing / not run / cancelled / stale / not applicable | <run identifier, failures, or reason> |
+
+Local tests cover the selected tasks and fixtures. Platform runs are reported by pl-job-run.
+
+### Job audit
+
+<Verdict on the final files and the five assessment rows from the auditor. List outstanding findings and improvements by impact. In review mode use the Findings table for their detail.>
+
 ### Assumptions
 
 - <One line per accepted default or non-blocking assumption, with its source and the alternative.>
@@ -61,7 +84,7 @@ Package: `./<job-key>/` and `./<job-key>.job.zip` (<N> errors, <M> warnings expl
 | Project instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md` at the project root) | applied / not found / no rule about jobs | <one line per rule applied> |
 | User instruction files (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.vibe/AGENTS.md`) | applied / not found / no rule about jobs | <one line per rule applied> |
 
-- Not applied: <the instruction, its file, and the rule that wins: documented job format, secrets rules, or never claiming an execution>, or "none".
+- Not applied: <the instruction, its file, and the rule that wins: documented job format, secrets rules, or evidence of platform operations>, or "none".
 - Departures from the job design guidelines: <the XML task or XSLT asset, and its reason: XML-only task, volume, XML source or target imposed by the brief, instruction>, or "none".
 
 ### Documentation conflicts
@@ -75,10 +98,9 @@ Package: `./<job-key>/` and `./<job-key>.job.zip` (<N> errors, <M> warnings expl
 
 ### Next steps
 
-1. Import `<job-key>.job.zip` with the VS Code extension or in Settings (Data Factory > Jobs > Add job, drag the zip), in a project of your choice.
-2. Create the variables above (mark the secret ones as protected) before the first run.
-3. Configure in Settings: pipeline <recommended pipeline>, visibility <hidden | visible on tables ...>, periodicity <cron in UTC or "none">, status Draft until tested.
-4. Test on a small selection or a small file, read the execution report, then switch the status to Production.
+1. Review the files, then run pl-job-run: it creates the variables marked "to create", creates or updates the job and runs it.
+2. Configure in Settings: pipeline <recommended pipeline>, visibility <hidden | visible on tables ...>, periodicity <cron in UTC or "none">, status Draft until tested.
+3. Test on a small selection or a small file, read the execution report, then switch the status to Production.
 ```
 
 Rules:
@@ -90,6 +112,8 @@ Rules:
 - Questions that need an answer belong in the "Needs input" handoff (SKILL.md, Interaction rules), before design, not in a completion report. The Assumptions section records accepted defaults and non-blocking assumptions.
 - The Instructions and guidelines section names every instruction file looked for (applied, or "not found"), lists every instruction not applied with the rule that wins, and every XML task or XSLT asset used where `references/job-guidelines.md` prefers the JSON route, with its reason. Review mode keeps the section: it reports the instructions applied to the review and the departures found.
 - The Reference tokens section lists the `Reference token:` line of every file read under `references/knowledge/`, including one per task file, and the one of `references/job-guidelines.md`.
-- Review mode uses "Status: reviewed, not modified, not packaged, not executed. Mode: review." State the actual validator error and warning counts. Replace "Package" with "Findings": a table (severity, location, finding, fix) ordered by severity, followed by the Mermaid flow diagram. Next steps lists proposed corrections and unresolved questions, not instructions to import a newly generated package. End with "Fixes applied: none". If applying fixes was requested, follow modify mode and list the changes instead.
+- Review mode uses "Status: reviewed, not modified, not packaged, not executed on the platform. Mode: review." State the actual validator error and warning counts. Replace "Package" with "Findings": a table (severity, location, finding, fix) ordered by severity, followed by the Mermaid flow diagram. Next steps lists proposed corrections and unresolved questions, not instructions to import a newly generated package. End with "Fixes applied: none". If applying fixes was requested, follow modify mode and list the changes instead.
 - Modify mode adds a "Changes" list (what changed, why) and the new CHANGELOG version.
-- Never write "the job ran", "imported", "works on the platform": the skill has no access to the platform.
+- Report local tests separately from validation and packaging whenever they apply. Give the full-run identifier when verified. If an applicable test is blocked, give the reason and the next step. Use "not applicable" when the job has no tasks supported by the local runner. Report an explicitly requested but unresolved test as incomplete.
+- Include only outstanding actions in Next steps.
+- In create and modify modes, "Files to review" lists every file of the package (the files `.jobignore` excludes are not listed), as Markdown links to absolute paths. In modify mode, mark the changed files with "(changed)".
